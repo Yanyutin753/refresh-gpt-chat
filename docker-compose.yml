@@ -1,0 +1,27 @@
+version: '3' 
+
+services:  
+  refresh-gpt-chat:  
+    # 该服务使用的 Docker 镜像
+    image: yangclivia/refresh-gpt-chat:latest  
+    # Java 的环境变量 （可适当调节，用copilot可以适当调大点，具体可问gpt了解）
+    environment:  
+      - JAVA_OPTS=-XX:+UseParallelGC -Xms64m -Xmx64m -XX:MaxMetaspaceSize=64m  
+    # 为该服务创建的容器的名称
+    container_name: refresh-gpt-chat
+    # 容器总是重新启动
+    restart: always  
+    # 容器运行的用户
+    user: root  
+    # 容器的网络模式
+    network_mode: host
+    command:  
+      - --log=info
+      #自定义端口号 
+      - --server.port=8082
+      #自定义前缀
+      - --server.servlet.context-path=/tokensTool
+      # ninja获取accessToken的Url
+      - --getAccessTokenUrl=http(s)://ip+port/域名/auth/refresh_token
+      # ninja或者chat2api API接口
+      - --chatUrl=http(s)://ip+port/域名/v1/chat/completions
