@@ -1,6 +1,6 @@
 # refresh-gpt-chat
 
-![Docker Image Size (tag)](https://img.shields.io/docker/image-size/yangclivia/refresh-gpt-chat/latest)![Docker Pulls](https://img.shields.io/docker/pulls/yangclivia/refresh-gpt-chat)[![GitHub Repo stars](https://img.shields.io/github/stars/Yanyutin753/refresh-gpt-chat-sh?style=social)](https://github.com/Yanyutin753/refresh-gpt-chat-sh/stargazers)
+![Docker Image Size (tag)](https://img.shields.io/docker/image-size/yangclivia/refresh-gpt-chat/latest)![Docker Pulls](https://img.shields.io/docker/pulls/yangclivia/refresh-gpt-chat)[![GitHub Repo stars](https://img.shields.io/github/stars/Yanyutin753/refresh-gpt-chat?style=social)](https://github.com/Yanyutin753/refresh-gpt-chat/stargazers)
 
 ### 不许白嫖，请给我免费的star⭐吧，十分感谢！
 
