@@ -6,7 +6,7 @@
 
 ## 简介 
 #### [refresh-gpt-chat](https://github.com/Yanyutin753/refresh-gpt-chat) 中转ninja或者pandoratoai的/v1/chat/completions接口，把refresh_token当key使用，内含hashmap,自动更新access_token,完美继承pandoraNext留下的refresh_token,支持基本所有的模型，小白也能快速使用！
-#### [gpt4 copilot Java](https://github.com/Yanyutin753/refresh-gpt-chat) Transfer Copilot, Cocopilot, smooth response, supports high concurrency, supports one click script deployment, and even novices can use it quickly!
+#### [refresh-gpt-chat](https://github.com/Yanyutin753/refresh-gpt-chat) Intercept the /v1/chat/completions interface of ninja or pandoratoai, use the refresh_token as the key, which contains a hashmap, automatically update the access_token, perfectly inherit the refresh_token left by pandoraNext, support almost all models, even beginners can use it quickly!
 
 -----
 
