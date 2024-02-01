@@ -35,8 +35,8 @@
 - **启动端口号**：server.port=8081
 - **URL自定义后缀(选填)**：server.servlet.context-path=/tokensTool
     * 记住前面必须加上/，例如/tokensTool,/tool等
-- **refresh_token转access_token的地址**：getAccessTokenUrl=http(s)://ip+port/url/auth/refresh_token
-- **反代的v1/chat路径（可以为pandora/ninja/pandoratoapi）**：chatUrl=http(s)://ip+port/url/v1/chat/completions
+- **refresh_token转access_token的地址**：getAccessTokenUrl=http(s)://ip+port或域名/auth/refresh_token
+- **反代的v1/chat路径（可以为pandora/ninja/pandoratoapi）**：chatUrl=http(s)://ip+port或域名/v1/chat/completions
 ### **java部署详情**
 
 ```
@@ -60,7 +60,7 @@ cd （你的jar包的位置）
 ##### 运行程序
 ```
 # 例如
-nohup java -jar refresh-gpt-chat-0.0.1-SNAPSHOT.jar --server.port=8081 --server.servlet.context-path=/ --getAccessTokenUrl=http(s)://ip+port/url/auth/refresh_token --chatUrl=http(s)://ip+port/url/v1/chat/completions > myput.log 2>&1 &
+nohup java -jar refresh-gpt-chat-0.0.1-SNAPSHOT.jar --server.port=8081 --server.servlet.context-path=/ --getAccessTokenUrl=http(s)://ip+port或域名/auth/refresh_token --chatUrl=http(s)://ip+port或域名/v1/chat/completions > myput.log 2>&1 &
 
 # 等待一会 放行8081端口即可运行（自行调整）
 ```
@@ -84,8 +84,8 @@ docker run -d \
   --log=info
   --server.port=8081 \
   --server.servlet.context-path=/ 
-  --getAccessTokenUrl=http(s)://ip+port/url/auth/refresh_token
-  --chatUrl=http(s)://ip+port/url/v1/chat/completions
+  --getAccessTokenUrl=http(s)://ip+port或域名/auth/refresh_token
+  --chatUrl=http(s)://ip+port或域名/v1/chat/completions
 
 ```
 ----------
@@ -109,8 +109,8 @@ services:
       - --log=info
       - --server.port=8081
       - --server.servlet.context-path=/
-      - --getAccessTokenUrl=http(s)://ip+port/url/auth/refresh_token
-      - --chatUrl=http(s)://ip+port/url/v1/chat/completions
+      - --getAccessTokenUrl=http(s)://ip+port或域名/auth/refresh_token
+      - --chatUrl=http(s)://ip+port或域名/v1/chat/completions
 ```
 
 ##### 启动refresh-gpt-chat
