@@ -23,7 +23,13 @@
 > * **个人部署**：保障隐私安全
 > 
 
-------------
+## [✨点击查看文档站](https://apifox.com/apidoc/shared-4b9a7517-3f80-47a1-84fc-fcf78827a04a)
+
+<details>
+<summary>
+
+     简略文档，请点击上面连接跳转详细使用部署文档站
+</summary>
 
 ### **环境变量**
 - **启动端口号**：server.port=8081
@@ -123,6 +129,7 @@ docker-compose pull
 docker-compose up -d
 ```
 --------
+</details>
 
 > [!important]
 >
