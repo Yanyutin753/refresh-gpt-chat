@@ -19,6 +19,8 @@
 > * **可适用于ninja、pandoratoapi项目**：反代服务，直接使用
 >   
 > * **自定义后缀**：防止url被滥用
+>
+> * **支持base64识图**：能转发识图接口
 >   
 > * **个人部署**：保障隐私安全
 > 
@@ -35,8 +37,13 @@
 - **启动端口号**：server.port=8081
 - **URL自定义后缀(选填)**：server.servlet.context-path=/tokensTool
     * 记住前面必须加上/，例如/tokensTool,/tool等
-- **refresh_token转access_token的地址**：getAccessTokenUrl=http(s)://ip+port或域名/auth/refresh_token
-- **反代的v1/chat路径（可以为pandora/ninja/pandoratoapi）**：chatUrl=http(s)://ip+port或域名/v1/chat/completions
+- **refresh_token转access_token的地址**：getAccessTokenUrl=http(s)://ip+port或者域名/auth/refresh_token
+- **自定义的/v1/chat/completions接口**（可以为**ninja**/**PandoraToV1Api**/复活的**pandora**等能够通过access_token进行对话的url接口）：chatUrl=http(s)://ip+port或者域名/v1/chat/completions
+- **ninja的/v1/chat/completions接口**（可以为**ninja**/**PandoraToV1Api**/复活的**pandora**等能够通过access_token进行对话的url接口）：ninja_chatUrl=http(s)://ip+port或者域名/v1/chat/completions
+
+- ⚠**chatUrl和ninja_chatUrl都是可以通过access_token直接使用的/v1/chat/completions接口**
+    - 1.写两个的目的是为了反代多个，而不是单单一个，你可以选择ninja_chatUrl反代ninja的/v1/chat/completions，chatUrl反代PandoraToV1Api的/v1/chat/completions。
+    - 2.他们唯一的区别就是chatUrl在你部署的ninja_chatUrl服务的/v1/chat/completions接口请求，而ninja_chatUrl在你部署的ninja_chatUrl服务的ninja/v1/chat/completions端口请求
 ### **java部署详情**
 
 ```
@@ -60,7 +67,7 @@ cd （你的jar包的位置）
 ##### 运行程序
 ```
 # 例如
-nohup java -jar refresh-gpt-chat-0.0.1-SNAPSHOT.jar --server.port=8081 --server.servlet.context-path=/ --getAccessTokenUrl=http(s)://ip+port或域名/auth/refresh_token --chatUrl=http(s)://ip+port或域名/v1/chat/completions > myput.log 2>&1 &
+nohup java -jar refresh-gpt-chat-0.0.1-SNAPSHOT.jar --server.port=8081 --server.servlet.context-path=/ --getAccessTokenUrl=http(s)://ip+port/url/auth/refresh_token --chatUrl=http(s)://ip+port或者域名/v1/chat/completions --ninja_chatUrl=http(s)://ip+port或者域名/v1/chat/completions（选填）> myput.log 2>&1 &
 
 # 等待一会 放行8081端口即可运行（自行调整）
 ```
@@ -70,7 +77,7 @@ nohup java -jar refresh-gpt-chat-0.0.1-SNAPSHOT.jar --server.port=8081 --server.
 # 先拉取镜像
 docker pull yangclivia/refresh-gpt-chat:latest
 ```
-#### **1.部署PandoraNext启动命令**
+#### **1.部署refresh-gpt-chat启动命令**
 ```
 docker run -d \
   --restart=always \
@@ -79,13 +86,14 @@ docker run -d \
   --net=host \
   --pid=host \
   --privileged=true \
-  -e JAVA_OPTS="-XX:+UseParallelGC -Xms128m -Xmx128m -XX:MaxMetaspaceSize=128m" \ # 设置JVM参数（可适当调节，用copilot可以适当调大点，具体可问gpt了解）
+  -e JAVA_OPTS="-XX:+UseParallelGC -Xms128m -Xmx128m -XX:MaxMetaspaceSize=128m" \ # 设置JVM参数（可适当调节，并发高可以适当调大点，具体可问gpt了解）
   yangclivia/refresh-gpt-chat:latest \
   --log=info
   --server.port=8081 \
   --server.servlet.context-path=/ 
-  --getAccessTokenUrl=http(s)://ip+port或域名/auth/refresh_token
-  --chatUrl=http(s)://ip+port或域名/v1/chat/completions
+  --getAccessTokenUrl=http(s)://ip+port/url/auth/refresh_token
+  --chatUrl=http(s)://ip+port或者域名/v1/chat/completions
+  --ninja_chatUrl=http(s)://ip+port或者域名/v1/chat/completions（选填）
 
 ```
 ----------
@@ -96,7 +104,7 @@ version: '3'
 services:
   refresh-gpt-chat:
     image: yangclivia/refresh-gpt-chat:latest
-    # Java 的环境变量 （可适当调节，用copilot可以适当调大点，具体可问gpt了解）
+    # Java 的环境变量 （可适当调节，并发高可以适当调大点，具体可问gpt了解）
     environment:  
       - JAVA_OPTS=-XX:+UseParallelGC -Xms128m -Xmx128m -XX:MaxMetaspaceSize=128m  
     container_name: refresh-gpt-chat
@@ -109,8 +117,9 @@ services:
       - --log=info
       - --server.port=8081
       - --server.servlet.context-path=/
-      - --getAccessTokenUrl=http(s)://ip+port或域名/auth/refresh_token
-      - --chatUrl=http(s)://ip+port或域名/v1/chat/completions
+      - --getAccessTokenUrl=http(s)://ip+port/url/auth/refresh_token
+      - --chatUrl=http(s)://ip+port或者域名/v1/chat/completions
+      - --ninja_chatUrl=http(s)://ip+port或者域名/v1/chat/completions（选填）
 ```
 
 ##### 启动refresh-gpt-chat
