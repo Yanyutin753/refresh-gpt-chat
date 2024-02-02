@@ -38,12 +38,15 @@
 - **URL自定义后缀(选填)**：server.servlet.context-path=/tokensTool
     * 记住前面必须加上/，例如/tokensTool,/tool等
 - **refresh_token转access_token的地址**：getAccessTokenUrl=http(s)://ip+port或者域名/auth/refresh_token
-- **自定义的/v1/chat/completions接口**（可以为**ninja**/**PandoraToV1Api**/复活的**pandora**等能够通过access_token进行对话的url接口）：chatUrl=http(s)://ip+port或者域名/v1/chat/completions
-- **ninja的/v1/chat/completions接口**（可以为**ninja**/**PandoraToV1Api**/复活的**pandora**等能够通过access_token进行对话的url接口）：ninja_chatUrl=http(s)://ip+port或者域名/v1/chat/completions
+- **自定义的/v1/chat/completions接口**（可以为**ninja**/**PandoraToV1Api**/复活的**pandora**等能够通过access_token进行对话的url接口）：
+     - **chatUrl**=http(s)://ip+port或者域名/v1/chat/completions
+- **ninja的/v1/chat/completions接口**（可以为**ninja**/**PandoraToV1Api**/复活的**pandora**等能够通过access_token进行对话的url接口）
+     - **ninja_chatUrl**=http(s)://ip+port或者域名/v1/chat/completions
 
 - ⚠**chatUrl和ninja_chatUrl都是可以通过access_token直接使用的/v1/chat/completions接口**
     - 1.写两个的目的是为了反代多个，而不是单单一个，你可以选择ninja_chatUrl反代ninja的/v1/chat/completions，chatUrl反代PandoraToV1Api的/v1/chat/completions。
     - 2.他们唯一的区别就是chatUrl在你部署的ninja_chatUrl服务的/v1/chat/completions接口请求，而ninja_chatUrl在你部署的ninja_chatUrl服务的ninja/v1/chat/completions端口请求
+      
 ### **java部署详情**
 
 ```
