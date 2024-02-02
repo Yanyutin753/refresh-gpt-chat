@@ -35,7 +35,7 @@ public class refreshGptChatApplication {
     @PostConstruct
     public void initialize() {
         log.info("------------------------------------------------------");
-        log.info("----------原神refresh-gpt-chat启动成功------------");
+        log.info("----------原神refresh-gpt-chat v0.0.3启动成功------------");
         log.info("URL地址：http://0.0.0.0:" + serverPort + contextPath +"");
         log.info("------------------------------------------------------");
     }

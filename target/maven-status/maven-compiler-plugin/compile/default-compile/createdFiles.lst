@@ -1,5 +1,5 @@
-com\refresh\gptChat\config\WebConfig.class
 com\refresh\gptChat\controller\chatController.class
 com\refresh\gptChat\refreshGptChatApplication.class
 com\refresh\gptChat\config\CorsConfig.class
+com\refresh\gptChat\config\WebConfig.class
 com\refresh\gptChat\controller\CustomErrorController.class

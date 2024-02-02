@@ -317,23 +317,39 @@ public class chatController {
         try {
             JSONObject jsonObject = new JSONObject(com.alibaba.fastjson2.JSON.toJSONString(conversation));
             boolean isStream = jsonObject.optBoolean("stream", false);
+            int one_messageByte;
+            int sleep_time;
             if (isStream) {
+                if (!jsonObject.optString("model", "gpt-3.5-turbo").contains("gpt-4")) {
+                    one_messageByte = 2048;
+                    sleep_time = 0;
+                } else {
+                    one_messageByte = 128;
+                    sleep_time = 25;
+                }
                 response.setContentType("text/event-stream; charset=UTF-8");
             } else {
+                one_messageByte = 8192;
+                sleep_time = 0;
                 response.setContentType("application/json; charset=utf-8");
             }
             OutputStream out = new BufferedOutputStream(response.getOutputStream());
             InputStream in = new BufferedInputStream(resp.body().byteStream());
             // 一次拿多少数据 迭代循环
-            byte[] buffer = new byte[8192];
+            byte[] buffer = new byte[one_messageByte];
             int bytesRead;
             while ((bytesRead = in.read(buffer)) != -1) {
                 out.write(buffer, 0, bytesRead);
                 out.flush();
+                try {
+                    if(sleep_time > 0){
+                        Thread.sleep(sleep_time);
+                    }
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (JSONException e) {
+        } catch (IOException | JSONException e) {
             throw new RuntimeException(e);
         }
     }
