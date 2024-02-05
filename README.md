@@ -5,8 +5,8 @@
 ### 不许白嫖，请给我免费的star⭐吧，十分感谢！
 
 ## 简介 
-#### [refresh-gpt-chat](https://github.com/Yanyutin753/refresh-gpt-chat) 中转ninja或者PandoraToV1Api的/v1/chat/completions接口，把refresh_token当key使用，内含hashmap,自动更新access_token,完美继承pandoraNext留下的refresh_token,支持基本所有的模型，小白也能快速使用！
-#### [refresh-gpt-chat](https://github.com/Yanyutin753/refresh-gpt-chat) Intercept the /v1/chat/completions interface of ninja or PandoraToV1Api, use the refresh_token as the key, which contains a hashmap, automatically update the access_token, perfectly inherit the refresh_token left by pandoraNext, support almost all models, even beginners can use it quickly!
+#### [refresh-gpt-chat](https://github.com/Yanyutin753/refresh-gpt-chat) 中转ninja或者PandoraToV1Api的/v1/chat/completions和v1/images/generations接口，把refresh_token当key使用，内含hashmap,自动更新access_token,完美继承pandoraNext留下的refresh_token,支持基本所有的模型，小白也能快速使用！
+#### [refresh-gpt-chat](https://github.com/Yanyutin753/refresh-gpt-chat) Intercept the /v1/chat/completions and v1/images/generations interface of ninja or PandoraToV1Api, use the refresh_token as the key, which contains a hashmap, automatically update the access_token, perfectly inherit the refresh_token left by pandoraNext, support almost all models, even beginners can use it quickly!
 
 -----
 
@@ -15,6 +15,8 @@
 > * **通过refresh_token自动更新access_token**：方便使用
 >   
 > * **通过refresh_token作为key进行使用**：更好放入one-api里面
+>
+> * **支持反代v1/images/generations接口**：调用dall-e-3画图更出色
 >   
 > * **可适用于ninja、PandoraToV1Api项目**：反代服务，直接使用
 >   
@@ -25,7 +27,7 @@
 > * **回复打字机处理**：回复更流畅，减少卡顿
 > 
 > * **个人部署**：保障隐私安全
-> 
+>
 
 ## [✨点击查看文档站](https://apifox.com/apidoc/shared-4b9a7517-3f80-47a1-84fc-fcf78827a04a)
 
