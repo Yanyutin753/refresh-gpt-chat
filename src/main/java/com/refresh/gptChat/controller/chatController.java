@@ -32,6 +32,8 @@ public class chatController {
      * 缓存cocopilotToken
      */
     private static final HashMap<String, String> refreshTokenList;
+    private static final String imagePath = "/v1/images/generations";
+    private static final String chatPath = "/v1/chat/completions";
 
     static {
         refreshTokenList = new HashMap<>();
@@ -46,10 +48,8 @@ public class chatController {
     private String chatUrl;
     @Value("${ninja_chatUrl}")
     private String ninja_chatUrl;
-
-    private static final String imagePath = "/v1/images/generations";
-
-    private static final String chatPath = "/v1/chat/completions";
+    @Value("${enableOai}")
+    private boolean enableOai;
 
     @Scheduled(cron = "0 0 0 * * ?")
     private void clearModelsUsage() {
@@ -121,8 +121,7 @@ public class chatController {
                             return new ResponseEntity<>("404", HttpStatus.NOT_FOUND);
                         } else if (resp.code() == 500) {
                             return new ResponseEntity<>("INTERNAL SERVER ERROR", HttpStatus.INTERNAL_SERVER_ERROR);
-                        }
-                        else {
+                        } else {
                             String token = getAccessToken(refresh_token);
                             if (token == null) {
                                 return new ResponseEntity<>("refresh_token is wrong", HttpStatus.UNAUTHORIZED);
@@ -316,7 +315,7 @@ public class chatController {
                 MediaType JSON = MediaType.get("application/json; charset=utf-8");
                 RequestBody requestBody = RequestBody.create(json, JSON);
                 // 检查URL是否包含要去除的部分
-                if (chatUrl.contains(chatPath)){
+                if (chatUrl.contains(chatPath)) {
                     // 去除指定部分
                     imageUrl = chatUrl.replace(chatPath, "") + imagePath;
                 }
@@ -335,8 +334,7 @@ public class chatController {
                             return new ResponseEntity<>("404", HttpStatus.NOT_FOUND);
                         } else if (resp.code() == 500) {
                             return new ResponseEntity<>("INTERNAL SERVER ERROR", HttpStatus.INTERNAL_SERVER_ERROR);
-                        }
-                        else {
+                        } else {
                             String token = getAccessToken(refresh_token);
                             if (token == null) {
                                 return new ResponseEntity<>("refresh_token is wrong", HttpStatus.UNAUTHORIZED);
@@ -408,7 +406,7 @@ public class chatController {
                 MediaType JSON = MediaType.get("application/json; charset=utf-8");
                 RequestBody requestBody = RequestBody.create(json, JSON);
                 // 检查URL是否包含要去除的部分
-                if (ninja_chatUrl.contains(chatPath)){
+                if (ninja_chatUrl.contains(chatPath)) {
                     // 去除指定部分
                     imageUrl = ninja_chatUrl.replace(chatPath, "") + imagePath;
                 }
@@ -500,6 +498,47 @@ public class chatController {
      * @throws IOException
      */
     private String getAccessToken(String refresh_token) {
+        return enableOai ? oaiGetAccessToken(refresh_token) : ninjaGetAccessToken(refresh_token);
+    }
+
+    private String oaiGetAccessToken(String refresh_token) {
+        try {
+            log.info("将通过这个网址请求access_token：https://auth0.openai.com/oauth/token");
+            MediaType mediaType = MediaType.parse("application/json");
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("redirect_uri", "com.openai.chat://auth0.openai.com/ios/com.openai.chat/callback");
+            jsonObject.put("grant_type", "refresh_token");
+            jsonObject.put("client_id", "pdlLIX2Y72MIl2rhLhTE9VV9bN905kBh");
+            jsonObject.put("refresh_token", refresh_token);
+            RequestBody body = RequestBody.create(mediaType, jsonObject.toString());
+            Request request = new Request.Builder()
+                    .url("https://auth0.openai.com/oauth/token")
+                    .method("POST", body)
+                    .addHeader("Content-Type", "application/json")
+                    .build();
+            Response response = client.newCall(request).execute();
+            if (!response.isSuccessful()) {
+                log.error("Request failed: " + response.body().string().trim());
+                return null;
+            }
+            String responseContent = response.body().string();
+            String access_Token = null;
+            try {
+                JSONObject jsonResponse = new JSONObject(responseContent);
+                access_Token = jsonResponse.getString("access_token");
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            if (response.code() == 200 && access_Token != null && access_Token.startsWith("eyJhb")) {
+                return access_Token;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private String ninjaGetAccessToken(String refresh_token) {
         try {
             log.info("将通过这个网址请求access_token：" + getAccessTokenUrl);
             Request request = new Request.Builder()
@@ -565,7 +604,7 @@ public class chatController {
                 out.write(buffer, 0, bytesRead);
                 out.flush();
                 try {
-                    if(sleep_time > 0){
+                    if (sleep_time > 0) {
                         Thread.sleep(sleep_time);
                     }
                 } catch (InterruptedException e) {

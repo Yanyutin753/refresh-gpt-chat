@@ -25,7 +25,14 @@ public class refreshGptChatApplication {
     private String contextPath;
     @Value("${server.port}")
     private String serverPort;
-
+    @Value("${getAccessTokenUrl}")
+    private String getAccessTokenUrl;
+    @Value("${chatUrl}")
+    private String chatUrl;
+    @Value("${ninja_chatUrl}")
+    private String ninja_chatUrl;
+    @Value("${enableOai}")
+    private boolean enableOai;
 
     public static void main(String[] args) {
         SpringApplication.run(refreshGptChatApplication.class, args);
@@ -34,13 +41,20 @@ public class refreshGptChatApplication {
 
     @PostConstruct
     public void initialize() {
-        log.info("------------------------------------------------------");
-        log.info("----------原神refresh-gpt-chat v0.1.0启动成功------------");
-        log.info("1.新增打字机效果，优化流式输出");
-        log.info("2.新增/v1/images/generations接口");
-        log.info("3.新增/ninja/v1/images/generations接口");
-        log.info("URL地址：http://0.0.0.0:" + serverPort + contextPath +"");
-        log.info("------------------------------------------------------");
+        System.out.println("------------------------------------------------------");
+        System.out.println("----------原神refresh-gpt-chat v0.2.0启动成功------------");
+        System.out.println("1.新增打字机效果，优化流式输出");
+        System.out.println("2.新增/v1/images/generations接口");
+        System.out.println("3.新增/ninja/v1/images/generations接口");
+        System.out.println("4.新增openai官网渠道使得refresh_token自动刷新成access_token");
+        System.out.println("URL地址：http://0.0.0.0:" + serverPort + contextPath +"");
+        System.out.println("------------------------------------------------------\n\n");
+        System.out.println("---------------------参数设置--------------------------");
+        System.out.println("参数enableOai:"+ enableOai);
+        System.out.println("参数getAccessTokenUrl:"+getAccessTokenUrl);
+        System.out.println("参数chatUrl:"+chatUrl);
+        System.out.println("参数ninja_chatUrl:"+ninja_chatUrl);
+        System.out.println("------------------------------------------------------");
     }
 }
 
