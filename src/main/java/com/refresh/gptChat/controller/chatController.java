@@ -66,43 +66,6 @@ public class chatController {
      * utf-8类型
      */
     private static final MediaType mediaType = MediaType.parse("application/json; charset=utf-8");
-
-    /**
-     * 服务端口
-     */
-    @Value("${server.port}")
-    private String serverPort;
-
-    /**
-     * 服务后缀
-     */
-    @Value("${server.servlet.context-path}")
-    private String prefix;
-
-    /**
-     * 最大线程数
-     */
-    @Value("${max_threads}")
-    private int max_threads;
-
-    /**
-     * is cancel gpt-4-gizmo
-     */
-    @Value("${isCancelGizmo}")
-    private boolean isCancelGizmo;
-
-    /**
-     * ninja 获取 access_token 接口
-     */
-    @Value("${getAccessTokenUrl_ninja}")
-    private String getAccessTokenUrl_ninja;
-
-    /**
-     * 获取 access_token 服务名称 oai/xyhelper/ninja
-     */
-    @Value("${getAccessTokenService}")
-    private String getAccessTokenService;
-
     /**
      * 定义线程池里的线程名字
      */
@@ -114,22 +77,14 @@ public class chatController {
             return new Thread(r, "chatThreadPool-" + counter.getAndIncrement());
         }
     };
-
     /**
      * 定义线程池
      */
     private static ExecutorService executor;
-
     /**
      * 删掉模型前缀 gpt-4-gizmo-
      */
     private static String cancelGizmo = "gpt-4-gizmo-";
-
-
-    @PostConstruct
-    public void init() {
-        setExecutor(max_threads);
-    }
 
     static {
         refreshTokenList = new ConcurrentHashMap<>();
@@ -139,11 +94,46 @@ public class chatController {
      * okhttp3 client服务定义
      */
     private final OkHttpClient client = new OkHttpClient.Builder().connectTimeout(3, TimeUnit.MINUTES).readTimeout(5, TimeUnit.MINUTES).writeTimeout(5, TimeUnit.MINUTES).build();
-
+    /**
+     * 服务端口
+     */
+    @Value("${server.port}")
+    private String serverPort;
+    /**
+     * 服务后缀
+     */
+    @Value("${server.servlet.context-path}")
+    private String prefix;
+    /**
+     * 最大线程数
+     */
+    @Value("${max_threads}")
+    private int max_threads;
+    /**
+     * is cancel gpt-4-gizmo
+     */
+    @Value("${isCancelGizmo}")
+    private boolean isCancelGizmo;
+    /**
+     * ninja 获取 access_token 接口
+     */
+    @Value("${getAccessTokenUrl_ninja}")
+    private String getAccessTokenUrl_ninja;
+    /**
+     * 获取 access_token 服务名称 oai/xyhelper/ninja
+     */
+    @Value("${getAccessTokenService}")
+    private String getAccessTokenService;
 
     public static void setExecutor(Integer maxPoolSize) {
         executor = new ThreadPoolExecutor(0, maxPoolSize, 60L, TimeUnit.SECONDS, new SynchronousQueue<>(), threadFactory);
     }
+
+    @PostConstruct
+    public void init() {
+        setExecutor(max_threads);
+    }
+
     @Scheduled(cron = "0 0 0 */3 * ?")
     private void clearModelsUsage() {
         int count = 0;
@@ -180,7 +170,7 @@ public class chatController {
                 if (conversation == null) {
                     return new ResponseEntity<>(Result.error("Request body is missing or not in JSON format"), HttpStatus.BAD_REQUEST);
                 }
-                if(conversation.getModel().startsWith("gpt-4-gizmo") && isCancelGizmo){
+                if (conversation.getModel().startsWith("gpt-4-gizmo") && isCancelGizmo) {
                     conversation.setModel(conversation.getModel().replace(cancelGizmo, ""));
                 }
                 String[] result = extractApiKeyAndRequestUrl(authorizationHeader, conversation);
@@ -229,6 +219,8 @@ public class chatController {
                         outPutChat(response, resp, conversation);
                     }
                 }
+            } catch (IllegalArgumentException e) {
+                return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -276,7 +268,7 @@ public class chatController {
                 }
             }
             return null;
-        } catch (Exception e) {
+        }catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -353,6 +345,9 @@ public class chatController {
                         outPutImage(response, resp, conversation);
                     }
                 }
+
+            } catch (IllegalArgumentException e) {
+                return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -399,8 +394,8 @@ public class chatController {
                 .filter(s -> !s.isEmpty())
                 .toArray(String[]::new);
 
-        if (tempResult.length < 1) {
-            throw new IllegalArgumentException("Authorization ApiKey is missing");
+        if (tempResult.length < 2) {
+            throw new IllegalArgumentException("Authorization ApiKey and requestUrl is missing, Please read the documentation!");
         }
         String[] finalResult = new String[3];
         // 复制解析后的值到finalResult数组，不足3个的部分将保持为null
@@ -600,7 +595,7 @@ public class chatController {
                     throw new RuntimeException(e);
                 }
             }
-            log.info("使用模型：" + model + "，"+ resp);
+            log.info("使用模型：" + model + "，" + resp);
         } catch (IOException | JSONException e) {
             throw new RuntimeException(e);
         }
@@ -626,7 +621,7 @@ public class chatController {
                 out.write(buffer, 0, bytesRead);
                 out.flush();
             }
-            log.info("使用模型：" + model + "，"+ resp);
+            log.info("使用模型：" + model + "，" + resp);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
