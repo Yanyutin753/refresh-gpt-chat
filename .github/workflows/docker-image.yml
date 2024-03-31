@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Build and Push Docker Image -jar
 
 on:
   release:
@@ -41,7 +41,6 @@ jobs:
         file: ./Dockerfile
         push: true
         tags: |
-          yangclivia/refresh-gpt-chat:${{ steps.tag_name.outputs.tag }}
-          yangclivia/refresh-gpt-chat:latest
-        platforms: linux/amd64,linux/arm64
-        build-args: TARGETPLATFORM=${{ matrix.platform }}
+          yangclivia/refresh-gpt-chat:${{ steps.tag_name.outputs.tag }}-jar
+          yangclivia/refresh-gpt-chat:latest-jar
+        platforms: linux/amd64,linux/arm64/v8
