@@ -464,6 +464,7 @@ public class chatController {
 
     private String xyhelperGetAccessToken(String refreshToken) {
         try {
+            log.info("将通过这个网址请求access_token：" + getAccessTokenUrl_xyhelper);
             RequestBody formBody = new FormBody.Builder()
                     .add("refresh_token", refreshToken)
                     .build();
