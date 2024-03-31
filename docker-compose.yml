@@ -1,7 +1,9 @@
 version: '3' 
 
 services:  
-  refresh-gpt-chat:  
+  refresh-gpt-chat:
+    ports:
+      - "127.0.0.1:8900:8082"
     # 该服务使用的 Docker 镜像
     image: yangclivia/refresh-gpt-chat:latest  
     # Java 的环境变量 （可适当调节，用copilot可以适当调大点，具体可问gpt了解）
@@ -26,6 +28,6 @@ services:
       # ninja get accessToken Url，如果getAccessTokenService填了ninja，该项必填
       - --getAccessTokenUrl_ninja=http(s)://ip+port/url/auth/refresh_token
       # is cancel gpt-4-gizmo
-      - --isCancelGizmo = true
+      - --isCancelGizmo=true
       # max_threads
       - --max_threads=300
