@@ -631,7 +631,7 @@ public class chatController {
     private void addHeader(Map<String, String> headersMap, String access_token, String request_id) {
         headersMap.put("Authorization", "Bearer " + access_token);
         if (request_id != null) {
-            headersMap.put("id", request_id);
+            headersMap.put("ChatGPT-Account-ID", request_id);
         }
     }
 }
