@@ -1,5 +1,9 @@
+com\refresh\gptChat\config\WebConfig.class
+com\refresh\gptChat\controller\chatController$1.class
+com\refresh\gptChat\pojo\Conversation.class
+com\refresh\gptChat\pojo\Result.class
 com\refresh\gptChat\controller\chatController.class
 com\refresh\gptChat\refreshGptChatApplication.class
 com\refresh\gptChat\config\CorsConfig.class
-com\refresh\gptChat\config\WebConfig.class
 com\refresh\gptChat\controller\CustomErrorController.class
+com\refresh\gptChat\pojo\Conversation$ConversationBuilder.class

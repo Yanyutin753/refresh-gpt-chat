@@ -17,11 +17,15 @@ services:
     network_mode: host
     command:  
       - --log=info
-      #自定义端口号 
+      # 自定义端口号
       - --server.port=8082
-      #自定义前缀
+      # 自定义前缀
       - --server.servlet.context-path=/tokensTool
-      # ninja获取accessToken的Url
-      - --getAccessTokenUrl=http(s)://ip+port/域名/auth/refresh_token
-      # ninja或者chat2api API接口
-      - --chatUrl=http(s)://ip+port/域名/v1/chat/completions
+      # 选择刷新access_token的服务商ninja/xyhelper/oai
+      - --getAccessTokenService=xyhelper
+      # ninja get accessToken Url，如果getAccessTokenService填了ninja，该项必填
+      - --getAccessTokenUrl_ninja=http(s)://ip+port/url/auth/refresh_token
+      # is cancel gpt-4-gizmo
+      - --isCancelGizmo = true
+      # max_threads
+      - --max_threads=300

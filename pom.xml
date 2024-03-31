@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.yyandywt99</groupId>
     <artifactId>refresh-gpt-chat</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.3.0</version>
     <name>refresh-gpt-chat</name>
     <description>refresh-gpt-chat</description>
     <properties>
