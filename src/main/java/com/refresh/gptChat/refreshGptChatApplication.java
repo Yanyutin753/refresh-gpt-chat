@@ -59,6 +59,12 @@ public class refreshGptChatApplication {
     @Value("${getAccessTokenService}")
     private String getAccessTokenService;
 
+    /**
+     * 获取个人的uuid
+     */
+    @Value("${self_server_uuid}")
+    private String self_server_uuid;
+
     public static void main(String[] args) {
         SpringApplication.run(refreshGptChatApplication.class, args);
 
@@ -76,8 +82,9 @@ public class refreshGptChatApplication {
         if ("ninja".equalsIgnoreCase(getAccessTokenService)) {
             System.out.println("参数getAccessTokenUrl_ninja：" + getAccessTokenUrl_ninja);
         }
+        System.out.println("参数self_server_uuid：" + self_server_uuid);
         System.out.println();
-        System.out.println("----------原神refresh-gpt-chat v0.4.0启动成功------------");
+        System.out.println("----------原神refresh-gpt-chat v0.5.0启动成功------------");
         System.out.println("1.新增oaifree作为服务商，支持refresh_token自动刷新成access_token");
         System.out.println("2.新增接口**/getAccountID**，获取ChatGPT-Account-ID");
         System.out.println("3.重构代码，使得结构更加清晰！");

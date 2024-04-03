@@ -37,7 +37,15 @@ public class chatController {
     /**
      * 缓存access_token
      */
-    private static final ConcurrentHashMap<String, String> refreshTokenList;
+    private static ConcurrentHashMap<String, String> refreshTokenList;
+
+    public static ConcurrentHashMap<String, String> getRefreshTokenList() {
+        return refreshTokenList;
+    }
+
+    public static void setRefreshTokenList(ConcurrentHashMap<String, String> refreshTokenList) {
+        chatController.refreshTokenList = refreshTokenList;
+    }
 
     /**
      * image接口
