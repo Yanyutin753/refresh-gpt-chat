@@ -51,7 +51,7 @@ public class getUserIDController {
                     .build();
 
             Response response = client.newCall(req).execute();
-
+            log.info("response: {}", response.body().toString());
             if (!response.isSuccessful()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Result.error(response.message()));
