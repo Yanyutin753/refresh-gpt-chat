@@ -51,6 +51,9 @@ public class getUserIDController {
     @PostMapping("/getAccountID")
     public ResponseEntity<Object> getUserID(HttpServletRequest request) {
         String refresh_token = extractToken(request.getHeader("Authorization"));
+        if(refresh_token == null){
+            return createUnauthorizedResponse("Authorization token is null");
+        }
         String access_token = refresh_token;
         if(! refresh_token.startsWith("eyJhb")){
             access_token = getAccessToken(refresh_token);
