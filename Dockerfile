@@ -11,7 +11,7 @@ USER root
 ENV LANG C.UTF-8
 
 # 复制JAR文件到容器的/app目录下
-COPY ./target/refresh-gpt-chat-0.3.0.jar /app/app.jar
+COPY ./target/refresh-gpt-chat-0.4.0.jar /app/app.jar
 
 # 切换到/app目录
 WORKDIR /app
