@@ -3,7 +3,5 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$/.." vcs="Git" />
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/ninjaToV1Api" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/yubb_next_chat" vcs="Git" />
   </component>
 </project>

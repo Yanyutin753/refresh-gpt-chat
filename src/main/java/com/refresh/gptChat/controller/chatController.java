@@ -3,10 +3,13 @@ package com.refresh.gptChat.controller;
 import com.alibaba.fastjson2.JSON;
 import com.refresh.gptChat.pojo.Conversation;
 import com.refresh.gptChat.pojo.Result;
+import com.refresh.gptChat.service.messageService;
+import com.refresh.gptChat.service.outPutService;
+import com.refresh.gptChat.service.tokenService;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.json.JSONException;
-import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,8 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
-import java.util.Arrays;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -53,19 +55,10 @@ public class chatController {
     private static final String vedioPath = "v1/audio/transcriptions";
 
     /**
-     * xyhelper 获取 access_token 接口
-     */
-    private static final String getAccessTokenUrl_xyhelper = "https://demo.xyhelper.cn/applelogin";
-
-    /**
-     * oai 获取 access_token 接口
-     */
-    private static final String getAccessTokenUrl_oai = "https://auth0.openai.com/oauth/token";
-
-    /**
      * utf-8类型
      */
     private static final MediaType mediaType = MediaType.parse("application/json; charset=utf-8");
+
     /**
      * 定义线程池里的线程名字
      */
@@ -74,13 +67,15 @@ public class chatController {
 
         @Override
         public Thread newThread(Runnable r) {
-            return new Thread(r, "chatThreadPool-" + counter.getAndIncrement());
+            return new Thread(r, "refreshPool-" + counter.getAndIncrement());
         }
     };
+
     /**
      * 定义线程池
      */
     private static ExecutorService executor;
+
     /**
      * 删掉模型前缀 gpt-4-gizmo-
      */
@@ -94,36 +89,28 @@ public class chatController {
      * okhttp3 client服务定义
      */
     private final OkHttpClient client = new OkHttpClient.Builder().connectTimeout(3, TimeUnit.MINUTES).readTimeout(5, TimeUnit.MINUTES).writeTimeout(5, TimeUnit.MINUTES).build();
-    /**
-     * 服务端口
-     */
-    @Value("${server.port}")
-    private String serverPort;
-    /**
-     * 服务后缀
-     */
-    @Value("${server.servlet.context-path}")
-    private String prefix;
+
     /**
      * 最大线程数
      */
     @Value("${max_threads}")
     private int max_threads;
+
     /**
      * is cancel gpt-4-gizmo
      */
     @Value("${isCancelGizmo}")
     private boolean isCancelGizmo;
+
     /**
-     * ninja 获取 access_token 接口
+     * 导入outPutService/messageService/tokenService
      */
-    @Value("${getAccessTokenUrl_ninja}")
-    private String getAccessTokenUrl_ninja;
-    /**
-     * 获取 access_token 服务名称 oai/xyhelper/ninja
-     */
-    @Value("${getAccessTokenService}")
-    private String getAccessTokenService;
+    @Autowired
+    private outPutService outPutService;
+    @Autowired
+    private messageService messageService;
+    @Autowired
+    private tokenService tokenService;
 
     public static void setExecutor(Integer maxPoolSize) {
         executor = new ThreadPoolExecutor(0, maxPoolSize, 60L, TimeUnit.SECONDS, new SynchronousQueue<>(), threadFactory);
@@ -138,7 +125,7 @@ public class chatController {
     private void clearModelsUsage() {
         int count = 0;
         for (Map.Entry<String, String> entry : refreshTokenList.entrySet()) {
-            String access_token = getAccessToken(entry.getKey());
+            String access_token = tokenService.getAccessToken(entry.getKey());
             if (access_token != null) {
                 refreshTokenList.put(entry.getKey(), access_token);
                 count++;
@@ -173,12 +160,12 @@ public class chatController {
                 if (conversation.getModel().startsWith("gpt-4-gizmo") && isCancelGizmo) {
                     conversation.setModel(conversation.getModel().replace(cancelGizmo, ""));
                 }
-                String[] result = extractApiKeyAndRequestUrl(authorizationHeader, conversation);
+                String[] result = messageService.extractApiKeyAndRequestUrl(authorizationHeader, conversation);
                 String refresh_token = result[0];
                 String request_url = result[1];
                 String request_id = result[2];
                 if (!refreshTokenList.containsKey(refresh_token)) {
-                    String token = getAccessToken(refresh_token);
+                    String token = tokenService.getAccessToken(refresh_token);
                     if (token == null) {
                         return new ResponseEntity<>("refresh_token is wrong", HttpStatus.UNAUTHORIZED);
                     }
@@ -206,7 +193,7 @@ public class chatController {
                         } else if (resp.code() == 500) {
                             return new ResponseEntity<>("INTERNAL SERVER ERROR", HttpStatus.INTERNAL_SERVER_ERROR);
                         } else {
-                            String token = getAccessToken(refresh_token);
+                            String token = tokenService.getAccessToken(refresh_token);
                             if (token == null) {
                                 return new ResponseEntity<>("refresh_token is wrong", HttpStatus.UNAUTHORIZED);
                             }
@@ -216,7 +203,7 @@ public class chatController {
                         }
                     } else {
                         // 流式和非流式输出
-                        outPutChat(response, resp, conversation);
+                        outPutService.outPutChat(response, resp, conversation);
                     }
                 }
             } catch (IllegalArgumentException e) {
@@ -227,7 +214,7 @@ public class chatController {
             return null;
         }, executor);
 
-        return getObjectResponseEntity(response, future);
+        return outPutService.getObjectResponseEntity(response, future);
     }
 
 
@@ -264,11 +251,11 @@ public class chatController {
                     return new ResponseEntity<>("refresh_token is wrong Or your network is wrong", HttpStatus.UNAUTHORIZED);
                 } else {
                     // 流式和非流式输出
-                    outPutChat(response, resp, conversation);
+                    outPutService.outPutChat(response, resp, conversation);
                 }
             }
             return null;
-        }catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -293,12 +280,12 @@ public class chatController {
         // 异步处理
         CompletableFuture<ResponseEntity<Object>> future = CompletableFuture.supplyAsync(() -> {
             try {
-                String[] result = extractApiKeyAndRequestUrl(authorizationHeader, conversation);
+                String[] result = messageService.extractApiKeyAndRequestUrl(authorizationHeader, conversation);
                 String refresh_token = result[0];
                 String request_url = result[1];
                 String request_id = result[2];
                 if (!refreshTokenList.containsKey(refresh_token)) {
-                    String token = getAccessToken(refresh_token);
+                    String token = tokenService.getAccessToken(refresh_token);
                     if (token == null) {
                         return new ResponseEntity<>("refresh_token is wrong", HttpStatus.UNAUTHORIZED);
                     }
@@ -332,7 +319,7 @@ public class chatController {
                         } else if (resp.code() == 500) {
                             return new ResponseEntity<>("INTERNAL SERVER ERROR", HttpStatus.INTERNAL_SERVER_ERROR);
                         } else {
-                            String token = getAccessToken(refresh_token);
+                            String token = tokenService.getAccessToken(refresh_token);
                             if (token == null) {
                                 return new ResponseEntity<>("refresh_token is wrong", HttpStatus.UNAUTHORIZED);
                             }
@@ -342,7 +329,7 @@ public class chatController {
                         }
                     } else {
                         // 回复image回答
-                        outPutImage(response, resp, conversation);
+                        outPutService.outPutImage(response, resp, conversation);
                     }
                 }
 
@@ -353,55 +340,9 @@ public class chatController {
             }
             return null;
         }, executor);
-        return getObjectResponseEntity(response, future);
+        return outPutService.getObjectResponseEntity(response, future);
     }
 
-    /**
-     * 返回异步responseEntity
-     *
-     * @param response future
-     */
-    private ResponseEntity<Object> getObjectResponseEntity(HttpServletResponse response, CompletableFuture<ResponseEntity<Object>> future) {
-        ResponseEntity<Object> responseEntity;
-
-        try {
-            responseEntity = future.get(6, TimeUnit.MINUTES);
-        } catch (TimeoutException ex) {
-            response.setContentType("application/json; charset=utf-8");
-            future.cancel(true);
-            responseEntity = new ResponseEntity<>(Result.error("The Chat timed out"), HttpStatus.REQUEST_TIMEOUT);
-        } catch (Exception ex) {
-            response.setContentType("application/json; charset=utf-8");
-            log.error(ex.getMessage());
-            responseEntity = new ResponseEntity<>(Result.error("An error occurred"), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-        return responseEntity;
-    }
-
-    /**
-     * 获取url和apiKey
-     *
-     * @param authorizationHeader
-     * @param conversation
-     * @throws IOException
-     */
-    private String[] extractApiKeyAndRequestUrl(String authorizationHeader, Conversation conversation) throws IllegalArgumentException {
-        if (conversation == null || authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            throw new IllegalArgumentException("Invalid input");
-        }
-        String[] tempResult = Arrays.stream(authorizationHeader.substring(7).split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .toArray(String[]::new);
-
-        if (tempResult.length < 2) {
-            throw new IllegalArgumentException("Authorization ApiKey and requestUrl is missing, Please read the documentation!");
-        }
-        String[] finalResult = new String[3];
-        // 复制解析后的值到finalResult数组，不足3个的部分将保持为null
-        System.arraycopy(tempResult, 0, finalResult, 0, Math.min(tempResult.length, 3));
-        return finalResult;
-    }
 
     /**
      * /v1/images/generations
@@ -436,194 +377,11 @@ public class chatController {
                     return new ResponseEntity<>("refresh_token is wrong Or your network is wrong", HttpStatus.UNAUTHORIZED);
                 } else {
                     // 回复image回答
-                    outPutImage(response, resp, conversation);
+                    outPutService.outPutImage(response, resp, conversation);
                 }
             }
             return null;
         } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * 用于refresh_token 拿到access_token
-     *
-     * @param refresh_token
-     * @return
-     * @throws IOException
-     */
-    private String getAccessToken(String refresh_token) {
-        if ("oai".equals(getAccessTokenService.toLowerCase())) {
-            return oaiGetAccessToken(refresh_token);
-        } else if ("ninja".equals(getAccessTokenService.toLowerCase())) {
-            return ninjaGetAccessToken(refresh_token);
-        } else {
-            return xyhelperGetAccessToken(refresh_token);
-        }
-    }
-
-    private String xyhelperGetAccessToken(String refreshToken) {
-        try {
-            log.info("将通过这个网址请求access_token：" + getAccessTokenUrl_xyhelper);
-            RequestBody formBody = new FormBody.Builder()
-                    .add("refresh_token", refreshToken)
-                    .build();
-            Request request = new Request.Builder()
-                    .url(getAccessTokenUrl_xyhelper)
-                    .post(formBody)
-                    .build();
-            try (Response response = client.newCall(request).execute()) {
-                if (!response.isSuccessful()) {
-                    System.err.println("Request failed: " + response.body().string().trim());
-                    return null;
-                }
-                String responseContent = response.body().string();
-                String access_Token;
-                JSONObject jsonResponse = new JSONObject(responseContent);
-                access_Token = jsonResponse.getString("access_token");
-                if (response.code() == 200 && access_Token != null && access_Token.startsWith("eyJhb")) {
-                    return access_Token;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    private String oaiGetAccessToken(String refresh_token) {
-        try {
-            log.info("将通过这个网址请求access_token：" + getAccessTokenUrl_oai);
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put("redirect_uri", "com.openai.chat://auth0.openai.com/ios/com.openai.chat/callback");
-            jsonObject.put("grant_type", "refresh_token");
-            jsonObject.put("client_id", "pdlLIX2Y72MIl2rhLhTE9VV9bN905kBh");
-            jsonObject.put("refresh_token", refresh_token);
-            RequestBody body = RequestBody.create(jsonObject.toString(), mediaType);
-            Request request = new Request.Builder()
-                    .url(getAccessTokenUrl_oai)
-                    .post(body)
-                    .addHeader("Content-Type", "application/json")
-                    .build();
-            try (Response response = client.newCall(request).execute()) {
-                if (!response.isSuccessful()) {
-                    System.err.println("Request failed: " + response.body().string().trim());
-                    return null;
-                }
-                String responseContent = response.body().string();
-                String access_Token;
-                JSONObject jsonResponse = new JSONObject(responseContent);
-                access_Token = jsonResponse.getString("access_token");
-                if (response.code() == 200 && access_Token != null && access_Token.startsWith("eyJhb")) {
-                    return access_Token;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    private String ninjaGetAccessToken(String refresh_token) {
-        try {
-            log.info("将通过这个网址请求access_token：" + getAccessTokenUrl_ninja);
-            RequestBody emptyBody = RequestBody.create("", mediaType);
-            Request request = new Request.Builder()
-                    .url(getAccessTokenUrl_ninja)
-                    .addHeader("Authorization", "Bearer " + refresh_token)
-                    .post(emptyBody)
-                    .build();
-            try (Response response = client.newCall(request).execute()) {
-                if (!response.isSuccessful()) {
-                    System.err.println("Request failed: " + response.body().string().trim());
-                    return null;
-                }
-                String responseContent = response.body().string();
-                String access_Token = null;
-                JSONObject jsonResponse = new JSONObject(responseContent);
-                access_Token = jsonResponse.getString("access_token");
-                if (response.code() == 200 && access_Token != null && access_Token.startsWith("eyJhb")) {
-                    return access_Token;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    /**
-     * chat接口的输出
-     *
-     * @param response
-     * @param resp
-     * @param conversation
-     */
-    private void outPutChat(HttpServletResponse response, Response resp, Conversation conversation) {
-        try {
-            JSONObject jsonObject = new JSONObject(com.alibaba.fastjson2.JSON.toJSONString(conversation));
-            String model = (conversation.getModel() != null) ? conversation.getModel() : "gpt-3.5-turbo";
-            boolean isStream = jsonObject.optBoolean("stream", false);
-            int one_messageByte;
-            int sleep_time;
-            if (isStream) {
-                if (!jsonObject.optString("model", "gpt-3.5-turbo").contains("gpt-4")) {
-                    one_messageByte = 2048;
-                    sleep_time = 0;
-                } else {
-                    one_messageByte = 128;
-                    sleep_time = 25;
-                }
-                response.setContentType("text/event-stream; charset=UTF-8");
-            } else {
-                one_messageByte = 8192;
-                sleep_time = 0;
-                response.setContentType("application/json; charset=utf-8");
-            }
-            OutputStream out = new BufferedOutputStream(response.getOutputStream());
-            InputStream in = new BufferedInputStream(resp.body().byteStream());
-            // 一次拿多少数据 迭代循环
-            byte[] buffer = new byte[one_messageByte];
-            int bytesRead;
-            while ((bytesRead = in.read(buffer)) != -1) {
-                out.write(buffer, 0, bytesRead);
-                out.flush();
-                try {
-                    if (sleep_time > 0) {
-                        Thread.sleep(sleep_time);
-                    }
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            log.info("使用模型：" + model + "，" + resp);
-        } catch (IOException | JSONException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-
-    /**
-     * image接口的输出
-     *
-     * @param response
-     * @param resp
-     */
-    private void outPutImage(HttpServletResponse response, Response resp, Conversation conversation) {
-        try {
-            response.setContentType("application/json; charset=utf-8");
-            String model = (conversation.getModel() != null) ? conversation.getModel() : "gpt-3.5-turbo";
-            OutputStream out = new BufferedOutputStream(response.getOutputStream());
-            InputStream in = new BufferedInputStream(resp.body().byteStream());
-            // 一次拿多少数据 迭代循环
-            byte[] buffer = new byte[8192];
-            int bytesRead;
-            while ((bytesRead = in.read(buffer)) != -1) {
-                out.write(buffer, 0, bytesRead);
-                out.flush();
-            }
-            log.info("使用模型：" + model + "，" + resp);
-        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

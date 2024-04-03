@@ -40,10 +40,6 @@ public class refreshGptChatApplication {
     @Value("${max_threads}")
     private int max_threads;
 
-    public int getMaxThreads() {
-        return max_threads;
-    }
-
 
     /**
      * is cancel gpt-4-gizmo
@@ -72,20 +68,20 @@ public class refreshGptChatApplication {
     public void initialize() {
         System.out.println("------------------------------------------------------");
         System.out.println("---------------------参数设置--------------------------");
-        System.out.println("参数serverPort："+ serverPort);
-        System.out.println("参数prefix："+ prefix);
-        System.out.println("参数max_threads："+ max_threads);
-        System.out.println("参数isCancelGizmo："+ isCancelGizmo);
-        System.out.println("参数getAccessTokenService："+ getAccessTokenService);
-        System.out.println("参数getAccessTokenUrl_ninja："+ getAccessTokenUrl_ninja);
-        System.out.println("");
-        System.out.println("----------原神refresh-gpt-chat v0.3.0启动成功------------");
-        System.out.println("1.新增打字机效果，优化流式输出");
-        System.out.println("2.新增/v1/images/generations接口");
-        System.out.println("3.新增refresh_token,requrest_url,ChatGPT-Account-ID 形式传入接口，用于自定义refresh_token,请求地址和ChatGPT-Account-ID\n" +
-                "   例如 Bearer asdasdasdasdwe2132ewe,https://api.oaifree.com/v1/chat/completions,asdasdasdasdasd12313");
-        System.out.println("4.新增openai和xyhelper渠道使得refresh_token自动刷新成access_token");
-        System.out.println("URL地址：http://0.0.0.0:" + serverPort + prefix + "");
+        System.out.println("参数serverPort：" + serverPort);
+        System.out.println("参数prefix：" + prefix);
+        System.out.println("参数max_threads：" + max_threads);
+        System.out.println("参数isCancelGizmo：" + isCancelGizmo);
+        System.out.println("参数getAccessTokenService：" + getAccessTokenService);
+        if ("ninja".equalsIgnoreCase(getAccessTokenService)) {
+            System.out.println("参数getAccessTokenUrl_ninja：" + getAccessTokenUrl_ninja);
+        }
+        System.out.println();
+        System.out.println("----------原神refresh-gpt-chat v0.4.0启动成功------------");
+        System.out.println("1.新增oaifree作为服务商，支持refresh_token自动刷新成access_token");
+        System.out.println("2.新增接口**/getAccountID**，获取ChatGPT-Account-ID");
+        System.out.println("3.重构代码，使得结构更加清晰！");
+        System.out.println("URL地址：http://0.0.0.0:" + serverPort + prefix);
         System.out.println("------------------------------------------------------");
     }
 }
