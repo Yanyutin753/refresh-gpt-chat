@@ -38,10 +38,6 @@
 > * 本项目只提供转发接口🥰
 > * 开源项目不易，请点个星星吧！！！
 
-### 新增群聊，点了⭐️可以进群讨论部署，我把你们拉进群，无广，广子踢掉
-
-<img src="https://github.com/Yanyutin753/PandoraNext-TokensTool/assets/132346501/6544e8ed-6673-48f9-95a6-c13255acbab1" width="300" height="300">
-
 ## Sponsor 
 
 ### 如果你觉得我的开源项目对你有帮助，可以赞助我一杯咖啡嘛，十分感谢！！！
