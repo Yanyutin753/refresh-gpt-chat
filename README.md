@@ -20,6 +20,10 @@
 >
 > * **支持反代v1/images/generations接口**：调用dall-e-3画图更出色
 >
+> * **支持反代v1/audio/speech接口**：调用tts-1，文字转语音
+> 
+> * **支持反代v1/audio/transcriptions接口**：调用whisper-1，语言转文字
+>
 > * **可适用于oaifree、ninja、PandoraToV1Api项目**：反代服务，直接使用
 >
 > * **自定义后缀**：防止url被滥用
