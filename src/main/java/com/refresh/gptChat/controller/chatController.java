@@ -190,6 +190,11 @@ public class chatController {
                     log.info("refreshTokenList初始化成功！");
                     access_token = refreshTokenList.get(refresh_token);
                 }
+                else {
+                    if(!refresh_token.startsWith("eyJhb")){
+                        access_token = refreshTokenList.get(refresh_token);
+                    }
+                }
                 Map<String, String> headersMap = new HashMap<>();
                 //添加头部
                 addHeader(headersMap, access_token, request_id);
@@ -314,6 +319,11 @@ public class chatController {
                     refreshTokenList.put(refresh_token, token);
                     log.info("refreshTokenList初始化成功！");
                     access_token = refreshTokenList.get(refresh_token);
+                }
+                else {
+                    if(!refresh_token.startsWith("eyJhb")){
+                        access_token = refreshTokenList.get(refresh_token);
+                    }
                 }
                 Map<String, String> headersMap = new HashMap<>();
                 //添加头部
@@ -578,6 +588,11 @@ public class chatController {
                     log.info("refreshTokenList初始化成功！");
                     access_token = refreshTokenList.get(refresh_token);
                 }
+                else {
+                    if(!refresh_token.startsWith("eyJhb")){
+                        access_token = refreshTokenList.get(refresh_token);
+                    }
+                }
                 String speechUrl = request_url;
                 // 检查URL是否包含要去除的部分
                 if (request_url.contains(chatPath)) {
@@ -720,6 +735,11 @@ public class chatController {
                             refreshTokenList.put(refresh_token, token);
                             log.info("refreshTokenList初始化成功！");
                             access_token = refreshTokenList.get(refresh_token);
+                        }
+                        else {
+                            if(!refresh_token.startsWith("eyJhb")){
+                                access_token = refreshTokenList.get(refresh_token);
+                            }
                         }
                         String audioUrl = request_url;
                         if (request_url.contains(chatPath)) {
