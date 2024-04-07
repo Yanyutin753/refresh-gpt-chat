@@ -6,9 +6,9 @@
 
 ## 简介
 
-#### [refresh-gpt-chat](https://github.com/Yanyutin753/refresh-gpt-chat) 中转oaifree或者ninja或者PandoraToV1Api的/v1/chat/completions和v1/images/generations接口，把refresh_token当key使用，内含hashmap,自动更新access_token,完美继承pandoraNext留下的refresh_token,支持基本所有的模型，小白也能快速使用！
+#### [refresh-gpt-chat](https://github.com/Yanyutin753/refresh-gpt-chat) 中转oaifree或者PandoraToV1Api的/v1/chat/completions和v1/images/generations接口，把refresh_token当key使用，内含hashmap,自动更新access_token,完美继承pandoraNext留下的refresh_token,支持基本所有的模型，小白也能快速使用！
 
-#### [refresh-gpt-chat](https://github.com/Yanyutin753/refresh-gpt-chat) Intercept the /v1/chat/completions and v1/images/generations interface of oaifree or ninja or PandoraToV1Api, use the refresh_token as the key, which contains a hashmap, automatically update the access_token, perfectly inherit the refresh_token left by pandoraNext, support almost all models, even beginners can use it quickly!
+#### [refresh-gpt-chat](https://github.com/Yanyutin753/refresh-gpt-chat) Intercept the /v1/chat/completions and v1/images/generations interface of oaifree or PandoraToV1Api, use the refresh_token as the key, which contains a hashmap, automatically update the access_token, perfectly inherit the refresh_token left by pandoraNext, support almost all models, even beginners can use it quickly!
 
 -----
 
@@ -24,7 +24,7 @@
 > 
 > * **支持反代v1/audio/transcriptions接口**：调用whisper-1，语言转文字
 >
-> * **可适用于oaifree、ninja、PandoraToV1Api项目**：反代服务，直接使用
+> * **可适用于oaifree、PandoraToV1Api项目**：反代服务，直接使用
 >
 > * **自定义后缀**：防止url被滥用
 >
