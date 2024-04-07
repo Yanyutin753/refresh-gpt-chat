@@ -65,6 +65,12 @@ public class refreshGptChatApplication {
     @Value("${self_server_uuid}")
     private String self_server_uuid;
 
+    /**
+     * 画图使用的模型 gpt-4-mobile 或者 gpt-4
+     */
+    @Value("${image_mobel}")
+    private String image_mobel;
+
     public static void main(String[] args) {
         SpringApplication.run(refreshGptChatApplication.class, args);
 
@@ -76,6 +82,7 @@ public class refreshGptChatApplication {
         System.out.println("---------------------参数设置--------------------------");
         System.out.println("参数serverPort：" + serverPort);
         System.out.println("参数prefix：" + prefix);
+        System.out.println("参数image_mobel：" + image_mobel);
         System.out.println("参数max_threads：" + max_threads);
         System.out.println("参数isCancelGizmo：" + isCancelGizmo);
         System.out.println("参数getAccessTokenService：" + getAccessTokenService);
@@ -84,10 +91,13 @@ public class refreshGptChatApplication {
         }
         System.out.println("参数self_server_uuid：" + self_server_uuid);
         System.out.println();
-        System.out.println("----------原神refresh-gpt-chat v0.5.0启动成功------------");
+        System.out.println("----------原神refresh-gpt-chat v0.6.0启动成功------------");
         System.out.println("1.新增oaifree作为服务商，支持refresh_token自动刷新成access_token");
         System.out.println("2.新增接口**/getAccountID**，获取ChatGPT-Account-ID");
-        System.out.println("3.重构代码，使得结构更加清晰！");
+        System.out.println("3.新增画图dall-e-3接口/v1/images/generations\n" +
+                "4.新增文字转语音接口/v1/audio/speech\"\n" +
+                "5.新增语言转文字接口/v1/audio/transcriptions");
+        System.out.println("6.新增变量image_mobel（gpt-4或gpt-4-mobile），用于控制画图接口调用模型");
         System.out.println("URL地址：http://0.0.0.0:" + serverPort + prefix);
         System.out.println("------------------------------------------------------");
     }

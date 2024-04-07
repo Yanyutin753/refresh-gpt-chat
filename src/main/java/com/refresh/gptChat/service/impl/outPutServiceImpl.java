@@ -1,7 +1,9 @@
 package com.refresh.gptChat.service.impl;
 
 import com.refresh.gptChat.pojo.Conversation;
+import com.refresh.gptChat.pojo.Image;
 import com.refresh.gptChat.pojo.Result;
+import com.refresh.gptChat.pojo.Speech;
 import com.refresh.gptChat.service.outPutService;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -81,10 +84,81 @@ public class outPutServiceImpl implements outPutService {
      * @param response
      * @param resp
      */
-    public void outPutImage(HttpServletResponse response, Response resp, Conversation conversation) {
+    public void outPutImage(HttpServletResponse response, Response resp, Image conversation) {
         try {
             response.setContentType("application/json; charset=utf-8");
-            String model = (conversation.getModel() != null) ? conversation.getModel() : "gpt-3.5-turbo";
+            String model = (conversation.getModel() != null) ? conversation.getModel() : "dell-e-3";
+            OutputStream out = new BufferedOutputStream(response.getOutputStream());
+            InputStream in = new BufferedInputStream(resp.body().byteStream());
+            // 一次拿多少数据 迭代循环
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = in.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
+                out.flush();
+            }
+            log.info("使用模型：" + model + "，" + resp);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    /**
+     * speech接口的输出
+     *
+     * @param response
+     * @param resp
+     */
+    @Override
+    public void outPutSpeech(HttpServletResponse response, Response resp, Speech conversation) {
+        try {
+            response.setContentType("audio/mpeg");
+            String model = (conversation.getModel() != null) ? conversation.getModel() : "tts-1";
+            OutputStream out = new BufferedOutputStream(response.getOutputStream());
+            InputStream in = new BufferedInputStream(resp.body().byteStream());
+            // 一次拿多少数据 迭代循环
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = in.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
+                out.flush();
+            }
+            log.info("使用模型：" + model + "，" + resp);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void outPutOaifreeImage(HttpServletResponse response, JSONObject newJson, Image conversation) {
+        try {
+            response.setContentType("application/json; charset=utf-8");
+            String model = (conversation.getModel() != null) ? conversation.getModel() : "dell-e-3";
+            OutputStream out = new BufferedOutputStream(response.getOutputStream());
+
+            // newJson需要是JSONObject或者JSONArray
+            if (!(newJson instanceof JSONObject)) {
+                throw new IllegalArgumentException("newJson object must be an instance of JSONObject or JSONArray");
+            }
+            String jsonString = newJson.toString();
+
+            byte[] data = jsonString.getBytes(StandardCharsets.UTF_8);
+
+            out.write(data);
+            out.flush();
+
+            log.info("使用模型：" + model + "，" + newJson);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void outPutAudio(HttpServletResponse response, Response resp, String temModel) {
+        try {
+            response.setContentType("application/json; charset=utf-8");
+            String model = temModel != null ? temModel : "whisper-1";
             OutputStream out = new BufferedOutputStream(response.getOutputStream());
             InputStream in = new BufferedInputStream(resp.body().byteStream());
             // 一次拿多少数据 迭代循环

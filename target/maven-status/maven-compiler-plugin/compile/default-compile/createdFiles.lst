@@ -7,10 +7,14 @@ com\refresh\gptChat\pojo\Result.class
 com\refresh\gptChat\controller\chatController.class
 com\refresh\gptChat\refreshGptChatApplication.class
 com\refresh\gptChat\config\CorsConfig.class
+com\refresh\gptChat\pojo\Image$ImageBuilder.class
 com\refresh\gptChat\service\impl\messageServiceImpl.class
 com\refresh\gptChat\service\messageService.class
+com\refresh\gptChat\pojo\Image.class
 com\refresh\gptChat\service\tokenService.class
 com\refresh\gptChat\pojo\Conversation$ConversationBuilder.class
 com\refresh\gptChat\service\impl\outPutServiceImpl.class
 com\refresh\gptChat\controller\CustomErrorController.class
+com\refresh\gptChat\pojo\Speech$SpeechBuilder.class
+com\refresh\gptChat\pojo\Speech.class
 com\refresh\gptChat\service\outPutService.class

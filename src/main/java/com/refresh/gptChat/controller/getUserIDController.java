@@ -51,11 +51,11 @@ public class getUserIDController {
     @PostMapping("/getAccountID")
     public ResponseEntity<Object> getUserID(HttpServletRequest request) {
         String refresh_token = extractToken(request.getHeader("Authorization"));
-        if(refresh_token == null){
+        if (refresh_token == null) {
             return createUnauthorizedResponse("Authorization token is null");
         }
         String access_token = refresh_token;
-        if(! refresh_token.startsWith("eyJhb")){
+        if (!refresh_token.startsWith("eyJhb")) {
             access_token = getAccessToken(refresh_token);
             if (access_token == null) {
                 return createUnauthorizedResponse("Authorization token is wrong");
@@ -70,7 +70,7 @@ public class getUserIDController {
             Map<String, Set<String>> accountIds = extractAccountIds(response.body().string());
             response.close();
 
-            if (accountIds.get("team") == null && accountIds.get("plus") == null){
+            if (accountIds.get("team") == null && accountIds.get("plus") == null) {
                 return createUnauthorizedResponse("No team and plus account found");
             }
             Map<String, Object> responseBodyMap = new HashMap<>();
@@ -126,8 +126,7 @@ public class getUserIDController {
             if (planType.equals("team")) {
                 teamIds.add(account_id);
                 accountIds.put("team", teamIds);
-            }
-            else if (planType.equals("plus")){
+            } else if (planType.equals("plus")) {
                 plusIds.add(account_id);
                 accountIds.put("plus", plusIds);
             }

@@ -1,6 +1,5 @@
 package com.refresh.gptChat.service.impl;
 
-import com.refresh.gptChat.pojo.Conversation;
 import com.refresh.gptChat.service.messageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,8 +22,8 @@ public class messageServiceImpl implements messageService {
      * @param conversation
      * @throws IOException
      */
-    public String[] extractApiKeyAndRequestUrl(String authorizationHeader, Conversation conversation) throws IllegalArgumentException {
-        if (conversation == null || authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+    public String[] extractApiKeyAndRequestUrl(String authorizationHeader) throws IllegalArgumentException {
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             throw new IllegalArgumentException("Invalid input");
         }
         String[] tempResult = Arrays.stream(authorizationHeader.substring(7).split(","))

@@ -6,7 +6,9 @@ F:\vue\fakeApiTool\refresh-gpt-chat\src\main\java\com\refresh\gptChat\refreshGpt
 F:\vue\fakeApiTool\refresh-gpt-chat\src\main\java\com\refresh\gptChat\service\messageService.java
 F:\vue\fakeApiTool\refresh-gpt-chat\src\main\java\com\refresh\gptChat\service\outPutService.java
 F:\vue\fakeApiTool\refresh-gpt-chat\src\main\java\com\refresh\gptChat\service\impl\tokenServiceImpl.java
+F:\vue\fakeApiTool\refresh-gpt-chat\src\main\java\com\refresh\gptChat\pojo\Image.java
 F:\vue\fakeApiTool\refresh-gpt-chat\src\main\java\com\refresh\gptChat\controller\CustomErrorController.java
+F:\vue\fakeApiTool\refresh-gpt-chat\src\main\java\com\refresh\gptChat\pojo\Speech.java
 F:\vue\fakeApiTool\refresh-gpt-chat\src\main\java\com\refresh\gptChat\controller\getUserIDController.java
 F:\vue\fakeApiTool\refresh-gpt-chat\src\main\java\com\refresh\gptChat\config\CorsConfig.java
 F:\vue\fakeApiTool\refresh-gpt-chat\src\main\java\com\refresh\gptChat\controller\chatController.java

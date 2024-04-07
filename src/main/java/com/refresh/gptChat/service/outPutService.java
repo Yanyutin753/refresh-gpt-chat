@@ -1,7 +1,10 @@
 package com.refresh.gptChat.service;
 
 import com.refresh.gptChat.pojo.Conversation;
+import com.refresh.gptChat.pojo.Image;
+import com.refresh.gptChat.pojo.Speech;
 import okhttp3.Response;
+import org.json.JSONObject;
 import org.springframework.http.ResponseEntity;
 
 import javax.servlet.http.HttpServletResponse;
@@ -34,5 +37,18 @@ public interface outPutService {
      * @param response
      * @param resp
      */
-    void outPutImage(HttpServletResponse response, Response resp, Conversation conversation);
+    void outPutImage(HttpServletResponse response, Response resp, Image conversation);
+
+    /**
+     * speech接口的输出
+     *
+     * @param response
+     * @param resp
+     * @param conversation
+     */
+    void outPutSpeech(HttpServletResponse response, Response resp, Speech conversation);
+
+    void outPutOaifreeImage(HttpServletResponse response, JSONObject newJson, Image conversation);
+
+    void outPutAudio(HttpServletResponse response, Response resp, String model);
 }
