@@ -33,7 +33,7 @@ public class CustomErrorController implements ErrorController {
                 "    <title>Document</title>\n" +
                 "</head>\n" +
                 "<body>\n" +
-                "    <p>Thanks you use refresh-gpt-chat 0.6.0</p>\n" +
+                "    <p>Thanks you use refresh-gpt-chat 0.7.0</p>\n" +
                 "    <p><a href=\"https://apifox.com/apidoc/shared-4b9a7517-3f80-47a1-84fc-fcf78827a04a\">详细使用文档</a></p>\n" +
                 "    <p><a href=\"https://github.com/Yanyutin753/refresh-gpt-chat\">项目地址</a></p>\n" +
                 "</body>\n" +

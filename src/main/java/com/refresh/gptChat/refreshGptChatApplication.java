@@ -91,14 +91,14 @@ public class refreshGptChatApplication {
         }
         System.out.println("参数self_server_uuid：" + self_server_uuid);
         System.out.println();
-        System.out.println("----------原神refresh-gpt-chat v0.6.0启动成功------------");
+        System.out.println("----------原神refresh-gpt-chat v0.7.0启动成功------------");
         System.out.println("1.新增oaifree作为服务商，支持refresh_token自动刷新成access_token");
         System.out.println("2.新增接口**/getAccountID**，获取ChatGPT-Account-ID");
         System.out.println("3.新增画图dall-e-3接口/v1/images/generations\n" +
                 "4.新增文字转语音接口/v1/audio/speech\"\n" +
                 "5.新增语言转文字接口/v1/audio/transcriptions");
-        System.out.println("6.新增变量image_mobel（gpt-4或gpt-4-mobile），用于控制画图接口调用模型");
-        System.out.println("7.重构代码，逻辑更加清晰，结构更加合理");
+        System.out.println("6.重构代码，逻辑更加清晰，结构更加合理");
+        System.out.println("7.新增变量/v1/images/edits，用于控制图片编辑调用模型");
         System.out.println("URL地址：http://0.0.0.0:" + serverPort + prefix);
         System.out.println("------------------------------------------------------");
     }

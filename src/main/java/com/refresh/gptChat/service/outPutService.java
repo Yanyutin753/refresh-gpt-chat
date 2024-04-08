@@ -4,7 +4,6 @@ import com.refresh.gptChat.pojo.Conversation;
 import com.refresh.gptChat.pojo.Image;
 import com.refresh.gptChat.pojo.Speech;
 import okhttp3.Response;
-import org.json.JSONObject;
 import org.springframework.http.ResponseEntity;
 
 import javax.servlet.http.HttpServletResponse;
@@ -22,14 +21,17 @@ public interface outPutService {
      * @param resp
      * @param conversation
      */
-    void outPutChat(HttpServletResponse response, Response resp, Conversation conversation);
+    void outPutChat(HttpServletResponse response,
+                    Response resp,
+                    Conversation conversation);
 
     /**
      * 返回异步responseEntity
      *
      * @param response future
      */
-    ResponseEntity<Object> getObjectResponseEntity(HttpServletResponse response, CompletableFuture<ResponseEntity<Object>> future);
+    ResponseEntity<Object> getObjectResponseEntity(HttpServletResponse response,
+                                                   CompletableFuture<ResponseEntity<Object>> future);
 
     /**
      * image接口的输出
@@ -37,7 +39,9 @@ public interface outPutService {
      * @param response
      * @param resp
      */
-    void outPutImage(HttpServletResponse response, Response resp, Image conversation);
+    void outPutImage(HttpServletResponse response,
+                     Response resp,
+                     Image conversation);
 
     /**
      * speech接口的输出
@@ -46,9 +50,15 @@ public interface outPutService {
      * @param resp
      * @param conversation
      */
-    void outPutSpeech(HttpServletResponse response, Response resp, Speech conversation);
+    void outPutSpeech(HttpServletResponse response,
+                      Response resp,
+                      Speech conversation);
 
-    void outPutOaifreeImage(HttpServletResponse response, JSONObject newJson, Image conversation);
 
-    void outPutAudio(HttpServletResponse response, Response resp, String model);
+    void outPutAudio(HttpServletResponse response,
+                     Response resp,
+                     String model);
+
+    void outPutEdit(HttpServletResponse response,
+                    Response resp);
 }

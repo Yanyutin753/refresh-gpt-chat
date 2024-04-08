@@ -10,9 +10,7 @@ import com.refresh.gptChat.service.processService;
 import com.refresh.gptChat.service.tokenService;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
-import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -31,7 +29,6 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -62,6 +59,10 @@ public class chatController {
      * speech接口
      */
     private static final String speechPath = "/v1/audio/speech";
+    /**
+     * edit接口
+     */
+    private static final String editPath = "/v1/images/edits";
     /**
      * utf-8类型
      */
@@ -256,91 +257,30 @@ public class chatController {
                 if (request_url.contains(chatPath)) {
                     imageUrl = request_url.replace(chatPath, "");
                 }
-                if (!imageUrl.contains("oaifree")) {
-                    String json = com.alibaba.fastjson2.JSON.toJSONString(conversation);
-                    RequestBody requestBody = RequestBody.create(json, mediaType);
-                    // 去除指定部分
-                    imageUrl = request_url + imagePath;
-                    log.info("请求image回复接口：" + imageUrl);
-                    Request.Builder requestBuilder = new Request.Builder().url(imageUrl).post(requestBody);
-                    headersMap.forEach(requestBuilder::addHeader);
-                    Request streamRequest = requestBuilder.build();
-                    try (Response resp = client.newCall(streamRequest).execute()) {
-                        if (!resp.isSuccessful()) {
-                            processService.imageManageUnsuccessfulResponse(refreshTokenList, resp,
-                                    refresh_token, response, conversation, imageUrl,
-                                    request_id);
-                        } else {
-                            // 回复image回答
-                            outPutService.outPutImage(response, resp, conversation);
-                        }
-                    } catch (ResponseStatusException e) {
-                        return new ResponseEntity<>(e.getMessage(), e.getStatus());
-                    } catch (Exception e) {
-                        return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+                String json = com.alibaba.fastjson2.JSON.toJSONString(conversation);
+                RequestBody requestBody = RequestBody.create(json, mediaType);
+                // 去除指定部分
+                imageUrl = request_url + imagePath;
+                log.info("请求image回复接口：" + imageUrl);
+                Request.Builder requestBuilder = new Request.Builder().url(imageUrl).post(requestBody);
+                headersMap.forEach(requestBuilder::addHeader);
+                Request streamRequest = requestBuilder.build();
+                try (Response resp = client.newCall(streamRequest).execute()) {
+                    if (!resp.isSuccessful()) {
+                        processService.imageManageUnsuccessfulResponse(refreshTokenList, resp,
+                                refresh_token, response, conversation, imageUrl,
+                                request_id);
+                    } else {
+                        // 回复image回答
+                        outPutService.outPutImage(response, resp, conversation);
                     }
-                } else {
-                    String json = "{\n" +
-                            "  \"model\": \"" + (image_mobel != null ? image_mobel : "gpt-4") + "\",\n" +
-                            "  \"stream\": false,\n" +
-                            "  \"messages\": [\n" +
-                            "    {\n" +
-                            "      \"content\": \"" + conversation.getPrompt() + "\",\n" +
-                            "      \"role\": \"user\"\n" +
-                            "    }\n" +
-                            "  ]\n" +
-                            "}";
-                    RequestBody requestBody = RequestBody.create(json, mediaType);
-                    // 去除指定部分
-                    imageUrl = request_url.replace(chatPath, "") + chatPath;
-                    log.info("请求image回复接口：" + imageUrl);
-                    Request.Builder requestBuilder = new Request.Builder().url(imageUrl).post(requestBody);
-                    headersMap.forEach(requestBuilder::addHeader);
-                    Request streamRequest = requestBuilder.build();
-                    try (Response resp = client.newCall(streamRequest).execute()) {
-                        if (!resp.isSuccessful()) {
-                            processService.imageManageUnsuccessfulResponse(refreshTokenList, resp,
-                                    refresh_token, response, conversation, imageUrl,
-                                    request_id);
-                        } else {
-                            String respStr = resp.body().string();
-                            JSONObject jsonObject = new JSONObject(respStr);
-                            String created = jsonObject.getString("created");
-                            JSONArray choicesArray = jsonObject.getJSONArray("choices");
-                            if (choicesArray.length() > 0) {
-                                JSONObject firstChoice = choicesArray.getJSONObject(0);
-                                JSONObject messageObject = firstChoice.getJSONObject("message");
-                                String content = messageObject.getString("content");
-                                Matcher matcher = pattern.matcher(content);
-                                if (matcher.find()) {
-                                    String urlAndText = matcher.group(1);
-                                    String[] splitArray = urlAndText.split(" ", 2);
-                                    if (splitArray.length == 2) {
-                                        String url = splitArray[0].trim();
-                                        String reply = "```\n{ " + splitArray[1].trim() + "}\n```";
-                                        JSONObject dataObject = new JSONObject();
-                                        dataObject.put("url", url);
-                                        JSONObject newJson = new JSONObject();
-                                        newJson.put("created", created);
-                                        newJson.put("data", dataObject);
-                                        newJson.put("reply", reply);
-                                        outPutService.outPutOaifreeImage(response, newJson, conversation);
-                                    }
-                                }
-                            } else {
-                                return new ResponseEntity<>(Result.error("INTERNAL SERVER ERROR"), HttpStatus.INTERNAL_SERVER_ERROR);
-                            }
-                        }
-
-                    } catch (ResponseStatusException e) {
-                        return new ResponseEntity<>(e.getMessage(), e.getStatus());
-                    } catch (Exception e) {
-                        return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-                    }
+                } catch (ResponseStatusException e) {
+                    return new ResponseEntity<>(e.getMessage(), e.getStatus());
+                } catch (Exception e) {
+                    return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
                 }
-
-            } catch (IllegalArgumentException e) {
-                return new ResponseEntity<>(Result.error(e.getMessage()), HttpStatus.BAD_REQUEST);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
             return null;
         }, executor);
@@ -438,7 +378,7 @@ public class chatController {
             return new ResponseEntity<>("File is too large, limit is: " + MAX_FILE_SIZE, HttpStatus.BAD_REQUEST);
         }
         String filename = file.getOriginalFilename();
-        log.info("上传文件名：" + filename + "\n上传文件名：" + file.getSize());
+        log.info("上传文件名：" + filename + " 上传文件名：" + file.getSize());
         log.info("上传模型：" + model);
         if (model == null || model.trim().isEmpty()) {
             return new ResponseEntity<>("Model cannot be empty", HttpStatus.BAD_REQUEST);
@@ -479,6 +419,89 @@ public class chatController {
                                         audioUrl, request_id);
                             } else {
                                 outPutService.outPutAudio(response, resp, model);
+                            }
+                        }
+                    } catch (Exception e) {
+                        return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+                    }
+                    return null;
+                }, executor);
+        return outPutService.getObjectResponseEntity(response, future);
+    }
+
+    /**
+     * 自定义v1/images/edits接口
+     * 请求体不是json 会报Request body is missing or not in JSON format
+     * Authorization token缺失  会报Authorization header is missing
+     * 无法请求到access_token 会报refresh_token is wrong
+     *
+     * @param response
+     * @param request
+     * @return
+     * @throws JSONException
+     * @throws IOException
+     */
+    @PostMapping(value = "/v1/images/edits")
+    public ResponseEntity<Object> AudioConversation(HttpServletResponse response,
+                                                    HttpServletRequest request,
+                                                    @RequestPart("image") MultipartFile image,
+                                                    @RequestPart("mask") MultipartFile mask,
+                                                    @RequestPart("prompt") String prompt,
+                                                    @RequestPart("n") String n ){
+        if (image.isEmpty() || mask.isEmpty()) {
+            return new ResponseEntity<>("Missing Image or Mask", HttpStatus.BAD_REQUEST);
+        }
+        String imageName = image.getOriginalFilename();
+        String maskName = mask.getOriginalFilename();
+        log.info("上传Image名：" + imageName + " 上传大小：" + image.getSize());
+        log.info("上传Mask名：" + maskName + " 上传大小：" + mask.getSize());
+        log.info("prompt：" + prompt);
+        log.info("n：" + n);
+        if (prompt == null || prompt.trim().isEmpty()) {
+            return new ResponseEntity<>("prompt cannot be empty ", HttpStatus.BAD_REQUEST);
+        }
+        if (n == null || Integer.parseInt(n) <= 0) {
+            return new ResponseEntity<>("n cannot be empty and n >= 1", HttpStatus.BAD_REQUEST);
+        }
+        String header = request.getHeader("Authorization");
+        String authorizationHeader = (header != null && !header.trim().isEmpty()) ? header.trim() : null;
+        CompletableFuture<ResponseEntity<Object>> future =
+                CompletableFuture.supplyAsync(() -> {
+                    try {
+                        String[] result = messageService.extractApiKeyAndRequestUrl(authorizationHeader);
+                        String refresh_token = result[0];
+                        String request_url = result[1];
+                        String request_id = result[2];
+                        String access_token = getAccess_token(refresh_token);
+                        String editUrl = request_url;
+                        if (request_url.contains(chatPath)) {
+                            editUrl = request_url.replace(chatPath, "");
+                        }
+                        editUrl = editUrl + editPath;
+                        Map<String, String> headersMap = tokenService.addHeader(access_token, request_id);
+                        RequestBody imageBody = RequestBody.create(image.getBytes(),
+                                MediaType.parse("application/octet-stream"));
+                        RequestBody maskBody = RequestBody.create(mask.getBytes(),
+                                MediaType.parse("application/octet-stream"));
+                        log.info("请求image edits 回复接口：" + editUrl);
+                        RequestBody body = new MultipartBody.Builder()
+                                .setType(MultipartBody.FORM)
+                                .addFormDataPart("prompt", prompt)
+                                .addFormDataPart("n", n)
+                                .addFormDataPart("image", imageName, imageBody)
+                                .addFormDataPart("mask", maskName, maskBody)
+                                .build();
+                        Request.Builder requestBuilder = new Request.Builder()
+                                .url(editUrl)
+                                .post(body);
+                        headersMap.forEach(requestBuilder::addHeader);
+                        try (Response resp = client.newCall(requestBuilder.build()).execute()) {
+                            log.info(resp.toString());
+                            if (!resp.isSuccessful()) {
+                                processService.editManageUnsuccessfulResponse(refreshTokenList, resp,
+                                        refresh_token, response, imageBody,imageName,maskBody,maskName,prompt,n, editUrl,request_id);
+                            } else {
+                                outPutService.outPutEdit(response, resp);
                             }
                         }
                     } catch (Exception e) {

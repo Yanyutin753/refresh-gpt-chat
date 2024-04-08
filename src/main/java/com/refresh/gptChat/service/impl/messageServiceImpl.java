@@ -38,5 +38,4 @@ public class messageServiceImpl implements messageService {
         System.arraycopy(tempResult, 0, finalResult, 0, Math.min(tempResult.length, 3));
         return finalResult;
     }
-
 }

@@ -7,14 +7,12 @@ import com.refresh.gptChat.pojo.Speech;
 import com.refresh.gptChat.service.outPutService;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
-import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -127,29 +125,6 @@ public class outPutServiceImpl implements outPutService {
         }
     }
 
-    @Override
-    public void outPutOaifreeImage(HttpServletResponse response, JSONObject newJson, Image conversation) {
-        try {
-            response.setContentType("application/json; charset=utf-8");
-            String model = (conversation.getModel() != null) ? conversation.getModel() : "dell-e-3";
-            OutputStream out = new BufferedOutputStream(response.getOutputStream());
-
-            // newJson需要是JSONObject或者JSONArray
-            if (!(newJson instanceof JSONObject)) {
-                throw new IllegalArgumentException("newJson object must be an instance of JSONObject or JSONArray");
-            }
-            String jsonString = newJson.toString();
-
-            byte[] data = jsonString.getBytes(StandardCharsets.UTF_8);
-
-            out.write(data);
-            out.flush();
-
-            log.info("使用模型：" + model + "，" + newJson);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     @Override
     public void outPutAudio(HttpServletResponse response, Response resp, String temModel) {
@@ -166,6 +141,30 @@ public class outPutServiceImpl implements outPutService {
                 out.flush();
             }
             log.info("使用模型：" + model + "，" + resp);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * edit接口的输出
+     * @param response
+     * @param resp
+     */
+    @Override
+    public void outPutEdit(HttpServletResponse response, Response resp) {
+        try {
+            response.setContentType("application/json; charset=utf-8");
+            OutputStream out = new BufferedOutputStream(response.getOutputStream());
+            InputStream in = new BufferedInputStream(resp.body().byteStream());
+            // 一次拿多少数据 迭代循环
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = in.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
+                out.flush();
+            }
+            log.info("使用edits接口编辑图片, " + resp);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
