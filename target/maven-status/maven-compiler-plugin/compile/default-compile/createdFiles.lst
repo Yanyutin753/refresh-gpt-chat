@@ -1,5 +1,6 @@
 com\refresh\gptChat\config\WebConfig.class
 com\refresh\gptChat\controller\getUserIDController.class
+com\refresh\gptChat\service\impl\processServiceImpl.class
 com\refresh\gptChat\service\impl\tokenServiceImpl.class
 com\refresh\gptChat\controller\chatController$1.class
 com\refresh\gptChat\pojo\Conversation.class
@@ -14,6 +15,7 @@ com\refresh\gptChat\pojo\Image.class
 com\refresh\gptChat\service\tokenService.class
 com\refresh\gptChat\pojo\Conversation$ConversationBuilder.class
 com\refresh\gptChat\service\impl\outPutServiceImpl.class
+com\refresh\gptChat\service\processService.class
 com\refresh\gptChat\controller\CustomErrorController.class
 com\refresh\gptChat\pojo\Speech$SpeechBuilder.class
 com\refresh\gptChat\pojo\Speech.class

@@ -50,18 +50,18 @@ public class getUserIDController {
      */
     @PostMapping("/getAccountID")
     public ResponseEntity<Object> getUserID(HttpServletRequest request) {
-        String refresh_token = extractToken(request.getHeader("Authorization"));
-        if (refresh_token == null) {
-            return createUnauthorizedResponse("Authorization token is null");
-        }
-        String access_token = refresh_token;
-        if (!refresh_token.startsWith("eyJhb")) {
-            access_token = getAccessToken(refresh_token);
-            if (access_token == null) {
-                return createUnauthorizedResponse("Authorization token is wrong");
-            }
-        }
         try {
+            String refresh_token = extractToken(request.getHeader("Authorization"));
+            if (refresh_token == null) {
+                return createUnauthorizedResponse("Authorization token is null");
+            }
+            String access_token = refresh_token;
+            if (!refresh_token.startsWith("eyJhb")) {
+                access_token = tokenService.getAccessToken(refresh_token);
+                if (access_token == null) {
+                    return createUnauthorizedResponse("Authorization token is wrong");
+                }
+            }
             Response response = sendRequest(access_token);
             if (!response.isSuccessful()) {
                 return createUnauthorizedResponse(response.message());
@@ -76,28 +76,10 @@ public class getUserIDController {
             Map<String, Object> responseBodyMap = new HashMap<>();
             responseBodyMap.put("teamIds", accountIds.get("team"));
             responseBodyMap.put("plusIds", accountIds.get("plus"));
-
             return ResponseEntity.ok(Result.success(responseBodyMap));
         } catch (IOException | JSONException e) {
             return createInternalErrorResponse(e.getMessage());
         }
-    }
-
-    private String getAccessToken(String refreshToken) {
-        String token;
-
-        if (!chatController.getRefreshTokenList().containsKey(refreshToken)) {
-            token = tokenService.getAccessToken(refreshToken);
-
-            if (token == null) {
-                return null;
-            }
-
-            chatController.getRefreshTokenList().put(refreshToken, token);
-            log.info("refreshTokenList初始化成功！");
-        }
-
-        return chatController.getRefreshTokenList().get(refreshToken);
     }
 
     private Response sendRequest(String accessToken) throws IOException {

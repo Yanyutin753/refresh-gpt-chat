@@ -7,7 +7,6 @@ import com.refresh.gptChat.pojo.Speech;
 import com.refresh.gptChat.service.outPutService;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,13 +35,12 @@ public class outPutServiceImpl implements outPutService {
      */
     public void outPutChat(HttpServletResponse response, Response resp, Conversation conversation) {
         try {
-            JSONObject jsonObject = new JSONObject(com.alibaba.fastjson2.JSON.toJSONString(conversation));
             String model = (conversation.getModel() != null) ? conversation.getModel() : "gpt-3.5-turbo";
-            boolean isStream = jsonObject.optBoolean("stream", false);
+            boolean isStream = conversation.getStream() != null ? conversation.getStream() : false;
             int one_messageByte;
             int sleep_time;
             if (isStream) {
-                if (!jsonObject.optString("model", "gpt-3.5-turbo").contains("gpt-4")) {
+                if (!model.contains("gpt-4")) {
                     one_messageByte = 2048;
                     sleep_time = 0;
                 } else {
@@ -72,11 +70,10 @@ public class outPutServiceImpl implements outPutService {
                 }
             }
             log.info("使用模型：" + model + "，" + resp);
-        } catch (IOException | JSONException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
-
 
     /**
      * image接口的输出

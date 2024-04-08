@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -66,6 +68,16 @@ public class tokenServiceImpl implements tokenService {
         } else {
             return xyhelperGetAccessToken(refresh_token);
         }
+    }
+
+    @Override
+    public Map<String, String> addHeader(String accessToken, String requestId) {
+        Map<String, String> headersMap = new HashMap<>();
+        headersMap.put("Authorization", "Bearer " + accessToken);
+        if (requestId != null) {
+            headersMap.put("ChatGPT-Account-ID", requestId);
+        }
+        return headersMap;
     }
 
     private String xyhelperGetAccessToken(String refreshToken) {

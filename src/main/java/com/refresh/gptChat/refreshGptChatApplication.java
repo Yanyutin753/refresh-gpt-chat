@@ -98,6 +98,7 @@ public class refreshGptChatApplication {
                 "4.新增文字转语音接口/v1/audio/speech\"\n" +
                 "5.新增语言转文字接口/v1/audio/transcriptions");
         System.out.println("6.新增变量image_mobel（gpt-4或gpt-4-mobile），用于控制画图接口调用模型");
+        System.out.println("7.重构代码，逻辑更加清晰，结构更加合理");
         System.out.println("URL地址：http://0.0.0.0:" + serverPort + prefix);
         System.out.println("------------------------------------------------------");
     }

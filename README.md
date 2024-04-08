@@ -21,7 +21,7 @@
 > * **支持反代v1/images/generations接口**：调用dall-e-3画图更出色
 >
 > * **支持反代v1/audio/speech接口**：调用tts-1，文字转语音
-> 
+>
 > * **支持反代v1/audio/transcriptions接口**：调用whisper-1，语言转文字
 >
 > * **可适用于oaifree、PandoraToV1Api项目**：反代服务，直接使用
@@ -42,11 +42,11 @@
 > * 本项目只提供转发接口🥰
 > * 开源项目不易，请点个星星吧！！！
 
-## Sponsor 
+## Sponsor
 
 ### 如果你觉得我的开源项目对你有帮助，可以赞助我一杯咖啡嘛，十分感谢！！！
-<img src="https://github.com/Yanyutin753/RefreshToV1Api/assets/132346501/e5ab5e80-1cf2-4822-ae36-f9d0b11ed1b1" width="300" height="300">
 
+<img src="https://github.com/Yanyutin753/RefreshToV1Api/assets/132346501/e5ab5e80-1cf2-4822-ae36-f9d0b11ed1b1" width="300" height="300">
 
 ## Star History
 

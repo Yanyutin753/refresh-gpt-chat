@@ -19,7 +19,6 @@ public class messageServiceImpl implements messageService {
      * 获取url和apiKey
      *
      * @param authorizationHeader
-     * @param conversation
      * @throws IOException
      */
     public String[] extractApiKeyAndRequestUrl(String authorizationHeader) throws IllegalArgumentException {

@@ -1,12 +1,12 @@
 package com.refresh.gptChat.controller;
 
-import com.alibaba.fastjson2.JSON;
 import com.refresh.gptChat.pojo.Conversation;
 import com.refresh.gptChat.pojo.Image;
 import com.refresh.gptChat.pojo.Result;
 import com.refresh.gptChat.pojo.Speech;
 import com.refresh.gptChat.service.messageService;
 import com.refresh.gptChat.service.outPutService;
+import com.refresh.gptChat.service.processService;
 import com.refresh.gptChat.service.tokenService;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
@@ -28,7 +28,6 @@ import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -68,6 +67,10 @@ public class chatController {
      */
     private static final MediaType mediaType = MediaType.parse("application/json; charset=utf-8");
     /**
+     * 定义正则
+     */
+    private static final Pattern pattern = Pattern.compile("\\(([^)]+)\\)");
+    /**
      * 缓存access_token
      */
     private static ConcurrentHashMap<String, String> refreshTokenList;
@@ -98,7 +101,9 @@ public class chatController {
     /**
      * okhttp3 client服务定义
      */
-    private final OkHttpClient client = new OkHttpClient.Builder().connectTimeout(3, TimeUnit.MINUTES).readTimeout(5, TimeUnit.MINUTES).writeTimeout(5, TimeUnit.MINUTES).build();
+    private final OkHttpClient client = new OkHttpClient.Builder().
+            connectTimeout(3, TimeUnit.MINUTES).readTimeout(5, TimeUnit.MINUTES).
+            writeTimeout(5, TimeUnit.MINUTES).build();
     /**
      * 最大线程数
      */
@@ -123,13 +128,16 @@ public class chatController {
     private messageService messageService;
     @Autowired
     private tokenService tokenService;
+    @Autowired
+    private processService processService;
 
     public static ConcurrentHashMap<String, String> getRefreshTokenList() {
         return refreshTokenList;
     }
 
     public static void setExecutor(Integer maxPoolSize) {
-        executor = new ThreadPoolExecutor(0, maxPoolSize, 60L, TimeUnit.SECONDS, new SynchronousQueue<>(), threadFactory);
+        executor = new ThreadPoolExecutor(0, maxPoolSize, 60L,
+                TimeUnit.SECONDS, new SynchronousQueue<>(), threadFactory);
     }
 
     @PostConstruct
@@ -180,24 +188,8 @@ public class chatController {
                 String refresh_token = result[0];
                 String request_url = result[1];
                 String request_id = result[2];
-                String access_token = refresh_token;
-                if (!refreshTokenList.containsKey(refresh_token) && !refresh_token.startsWith("eyJhb")) {
-                    String token = tokenService.getAccessToken(refresh_token);
-                    if (token == null) {
-                        return new ResponseEntity<>("refresh_token is wrong", HttpStatus.UNAUTHORIZED);
-                    }
-                    refreshTokenList.put(refresh_token, token);
-                    log.info("refreshTokenList初始化成功！");
-                    access_token = refreshTokenList.get(refresh_token);
-                }
-                else {
-                    if(!refresh_token.startsWith("eyJhb")){
-                        access_token = refreshTokenList.get(refresh_token);
-                    }
-                }
-                Map<String, String> headersMap = new HashMap<>();
-                //添加头部
-                addHeader(headersMap, access_token, request_id);
+                String access_token = getAccess_token(refresh_token);
+                Map<String, String> headersMap = tokenService.addHeader(access_token, request_id);
                 String json = com.alibaba.fastjson2.JSON.toJSONString(conversation);
                 RequestBody requestBody = RequestBody.create(json, mediaType);
                 String chatUrl = request_url;
@@ -211,77 +203,24 @@ public class chatController {
                 Request streamRequest = requestBuilder.build();
                 try (Response resp = client.newCall(streamRequest).execute()) {
                     if (!resp.isSuccessful()) {
-                        if (resp.code() == 429) {
-                            return new ResponseEntity<>("rate limit exceeded", HttpStatus.TOO_MANY_REQUESTS);
-                        } else if (resp.code() == 401) {
-                            return new ResponseEntity<>("models is not exist", HttpStatus.BAD_REQUEST);
-                        } else if (resp.code() == 404) {
-                            return new ResponseEntity<>("404", HttpStatus.NOT_FOUND);
-                        } else if (resp.code() == 500) {
-                            return new ResponseEntity<>("INTERNAL SERVER ERROR", HttpStatus.INTERNAL_SERVER_ERROR);
-                        } else {
-                            String token = refresh_token;
-                            if (!refresh_token.startsWith("eyJhb")) {
-                                token = tokenService.getAccessToken(refresh_token);
-                                if (token == null) {
-                                    return new ResponseEntity<>("refresh_token is wrong", HttpStatus.UNAUTHORIZED);
-                                }
-                                refreshTokenList.put(refresh_token, token);
-                                log.info("assess_token过期，refreshTokenList重置化成功！");
-                            }
-                            againChatConversation(response, conversation, token, chatUrl, request_id);
-                        }
+                        processService.chatManageUnsuccessfulResponse(refreshTokenList, resp,
+                                refresh_token, response, conversation, chatUrl,
+                                request_id);
                     } else {
                         // 流式和非流式输出
                         outPutService.outPutChat(response, resp, conversation);
                     }
+                } catch (ResponseStatusException e) {
+                    return new ResponseEntity<>(e.getMessage(), e.getStatus());
+                } catch (Exception e) {
+                    return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
                 }
             } catch (IllegalArgumentException e) {
                 return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
             }
             return null;
         }, executor);
-
         return outPutService.getObjectResponseEntity(response, future);
-    }
-
-
-    /**
-     * /v1/chat/completions
-     * 如发现token过期
-     * 重新回复问题
-     *
-     * @param response
-     * @param conversation
-     * @param access_token
-     * @return
-     */
-    public Object againChatConversation(HttpServletResponse response,
-                                        @org.springframework.web.bind.annotation.RequestBody Conversation conversation,
-                                        String access_token,
-                                        String chatUrl,
-                                        String request_id) {
-        Map<String, String> headersMap = new HashMap<>();
-        addHeader(headersMap, access_token, request_id);
-        try {
-            String json = com.alibaba.fastjson2.JSON.toJSONString(conversation);
-            RequestBody requestBody = RequestBody.create(json, mediaType);
-            log.info("请求回复接口：" + chatUrl);
-            Request.Builder requestBuilder = new Request.Builder().url(chatUrl).post(requestBody);
-            headersMap.forEach(requestBuilder::addHeader);
-            Request streamRequest = requestBuilder.build();
-            try (Response resp = client.newCall(streamRequest).execute()) {
-                if (resp.isSuccessful()) {
-                    // 流式和非流式输出
-                    outPutService.outPutChat(response, resp, conversation);
-                }
-            }
-            return null;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     /**
@@ -310,24 +249,8 @@ public class chatController {
                 String refresh_token = result[0];
                 String request_url = result[1];
                 String request_id = result[2];
-                String access_token = refresh_token;
-                if (!refreshTokenList.containsKey(refresh_token) && !refresh_token.startsWith("eyJhb")) {
-                    String token = tokenService.getAccessToken(refresh_token);
-                    if (token == null) {
-                        return new ResponseEntity<>(Result.error("refresh_token is wrong"), HttpStatus.UNAUTHORIZED);
-                    }
-                    refreshTokenList.put(refresh_token, token);
-                    log.info("refreshTokenList初始化成功！");
-                    access_token = refreshTokenList.get(refresh_token);
-                }
-                else {
-                    if(!refresh_token.startsWith("eyJhb")){
-                        access_token = refreshTokenList.get(refresh_token);
-                    }
-                }
-                Map<String, String> headersMap = new HashMap<>();
-                //添加头部
-                addHeader(headersMap, access_token, request_id);
+                String access_token = getAccess_token(refresh_token);
+                Map<String, String> headersMap = tokenService.addHeader(access_token, request_id);
                 String imageUrl = request_url;
                 // 检查URL是否包含要去除的部分
                 if (request_url.contains(chatPath)) {
@@ -344,30 +267,17 @@ public class chatController {
                     Request streamRequest = requestBuilder.build();
                     try (Response resp = client.newCall(streamRequest).execute()) {
                         if (!resp.isSuccessful()) {
-                            if (resp.code() == 429) {
-                                return new ResponseEntity<>("rate limit exceeded", HttpStatus.TOO_MANY_REQUESTS);
-                            } else if (resp.code() == 401) {
-                                return new ResponseEntity<>("models is not exist", HttpStatus.BAD_REQUEST);
-                            } else if (resp.code() == 404) {
-                                return new ResponseEntity<>("404", HttpStatus.NOT_FOUND);
-                            } else if (resp.code() == 500) {
-                                return new ResponseEntity<>("INTERNAL SERVER ERROR", HttpStatus.INTERNAL_SERVER_ERROR);
-                            } else {
-                                String token = refresh_token;
-                                if (!refresh_token.startsWith("eyJhb")) {
-                                    token = tokenService.getAccessToken(refresh_token);
-                                    if (token == null) {
-                                        return new ResponseEntity<>("refresh_token is wrong", HttpStatus.UNAUTHORIZED);
-                                    }
-                                    refreshTokenList.put(refresh_token, token);
-                                    log.info("assess_token过期，refreshTokenList重置化成功！");
-                                }
-                                againImageConversation(response, conversation, token, imageUrl, request_id);
-                            }
+                            processService.imageManageUnsuccessfulResponse(refreshTokenList, resp,
+                                    refresh_token, response, conversation, imageUrl,
+                                    request_id);
                         } else {
                             // 回复image回答
                             outPutService.outPutImage(response, resp, conversation);
                         }
+                    } catch (ResponseStatusException e) {
+                        return new ResponseEntity<>(e.getMessage(), e.getStatus());
+                    } catch (Exception e) {
+                        return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
                     }
                 } else {
                     String json = "{\n" +
@@ -389,26 +299,9 @@ public class chatController {
                     Request streamRequest = requestBuilder.build();
                     try (Response resp = client.newCall(streamRequest).execute()) {
                         if (!resp.isSuccessful()) {
-                            if (resp.code() == 429) {
-                                return new ResponseEntity<>(Result.error("rate limit exceeded"), HttpStatus.TOO_MANY_REQUESTS);
-                            } else if (resp.code() == 401) {
-                                return new ResponseEntity<>(Result.error("models or access_token is not exist"), HttpStatus.BAD_REQUEST);
-                            } else if (resp.code() == 404) {
-                                return new ResponseEntity<>(Result.error("404"), HttpStatus.NOT_FOUND);
-                            } else if (resp.code() == 500) {
-                                return new ResponseEntity<>(Result.error("INTERNAL SERVER ERROR"), HttpStatus.INTERNAL_SERVER_ERROR);
-                            } else {
-                                String token = refresh_token;
-                                if (!refresh_token.startsWith("eyJhb")) {
-                                    token = tokenService.getAccessToken(refresh_token);
-                                    if (token == null) {
-                                        return new ResponseEntity<>(Result.error("refresh_token is wrong"), HttpStatus.UNAUTHORIZED);
-                                    }
-                                    refreshTokenList.put(refresh_token, token);
-                                    log.info("assess_token过期，refreshTokenList重置化成功！");
-                                }
-                                againImageConversation(response, conversation, token, imageUrl, request_id);
-                            }
+                            processService.imageManageUnsuccessfulResponse(refreshTokenList, resp,
+                                    refresh_token, response, conversation, imageUrl,
+                                    request_id);
                         } else {
                             String respStr = resp.body().string();
                             JSONObject jsonObject = new JSONObject(respStr);
@@ -418,7 +311,6 @@ public class chatController {
                                 JSONObject firstChoice = choicesArray.getJSONObject(0);
                                 JSONObject messageObject = firstChoice.getJSONObject("message");
                                 String content = messageObject.getString("content");
-                                Pattern pattern = Pattern.compile("\\(([^)]+)\\)");
                                 Matcher matcher = pattern.matcher(content);
                                 if (matcher.find()) {
                                     String urlAndText = matcher.group(1);
@@ -439,113 +331,20 @@ public class chatController {
                                 return new ResponseEntity<>(Result.error("INTERNAL SERVER ERROR"), HttpStatus.INTERNAL_SERVER_ERROR);
                             }
                         }
-                    } catch (JSONException e) {
-                        throw new RuntimeException(e);
+
+                    } catch (ResponseStatusException e) {
+                        return new ResponseEntity<>(e.getMessage(), e.getStatus());
+                    } catch (Exception e) {
+                        return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
                     }
                 }
 
             } catch (IllegalArgumentException e) {
                 return new ResponseEntity<>(Result.error(e.getMessage()), HttpStatus.BAD_REQUEST);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
             }
             return null;
         }, executor);
         return outPutService.getObjectResponseEntity(response, future);
-    }
-
-
-    /**
-     * /v1/images/generations
-     * 如发现token过期
-     * 重新回复问题
-     *
-     * @param response
-     * @param conversation
-     * @param access_token
-     * @return
-     */
-    public Object againImageConversation(HttpServletResponse response,
-                                         @org.springframework.web.bind.annotation.RequestBody Image conversation,
-                                         String access_token,
-                                         String imageUrl,
-                                         String request_id) {
-        Map<String, String> headersMap = new HashMap<>();
-        //添加头部
-        addHeader(headersMap, access_token, request_id);
-        try {
-            if (!imageUrl.contains("oaifree")) {
-                String json = JSON.toJSONString(conversation);
-                // 创建一个 RequestBody 对象
-                RequestBody requestBody = RequestBody.create(json, mediaType);
-                Request streamRequest = new Request.Builder()
-                        .url(imageUrl)
-                        .post(requestBody)
-                        .addHeader("Authorization", "Bearer " + access_token)
-                        .addHeader("Content-Type", "application/json")
-                        .build();
-                try (Response resp = client.newCall(streamRequest).execute()) {
-                    if (!resp.isSuccessful()) {
-                        return new ResponseEntity<>(Result.error("refresh_token is wrong Or your network is wrong"), HttpStatus.UNAUTHORIZED);
-                    } else {
-                        // 回复image回答
-                        outPutService.outPutImage(response, resp, conversation);
-                    }
-                }
-            } else {
-                String json = "{\n" +
-                        "  \"model\": \"" + (image_mobel != null ? image_mobel : "gpt-4") + "\",\n" +
-                        "  \"stream\": false,\n" +
-                        "  \"messages\": [\n" +
-                        "    {\n" +
-                        "      \"content\": \"" + conversation.getPrompt() + "\",\n" +
-                        "      \"role\": \"user\"\n" +
-                        "    }\n" +
-                        "  ]\n" +
-                        "}";
-                RequestBody requestBody = RequestBody.create(json, mediaType);
-                // 去除指定部分
-                log.info("请求oaifree image回复接口：" + imageUrl);
-                Request.Builder requestBuilder = new Request.Builder().url(imageUrl).post(requestBody);
-                headersMap.forEach(requestBuilder::addHeader);
-                Request streamRequest = requestBuilder.build();
-                try (Response resp = client.newCall(streamRequest).execute()) {
-                    if (resp.isSuccessful()) {
-                        String respStr = resp.body().string();
-                        JSONObject jsonObject = new JSONObject(respStr);
-                        String created = jsonObject.getString("created");
-                        JSONArray choicesArray = jsonObject.getJSONArray("choices");
-                        if (choicesArray.length() > 0) {
-                            JSONObject firstChoice = choicesArray.getJSONObject(0);
-                            JSONObject messageObject = firstChoice.getJSONObject("message");
-                            String content = messageObject.getString("content");
-                            Pattern pattern = Pattern.compile("\\(([^)]+)\\)");
-                            Matcher matcher = pattern.matcher(content);
-                            if (matcher.find()) {
-                                String urlAndText = matcher.group(1);
-                                String[] splitArray = urlAndText.split(" ", 2);
-                                if (splitArray.length == 2) {
-                                    String url = splitArray[0].trim();
-                                    String reply = "```\n{ " + splitArray[1].trim() + "}\n```";
-                                    JSONObject dataObject = new JSONObject();
-                                    dataObject.put("url", url);
-                                    JSONObject newJson = new JSONObject();
-                                    newJson.put("created", created);
-                                    newJson.put("data", dataObject);
-                                    newJson.put("reply", reply);
-                                    outPutService.outPutOaifreeImage(response, newJson, conversation);
-                                }
-                            }
-                        } else {
-                            return new ResponseEntity<>(Result.error("INTERNAL SERVER ERROR"), HttpStatus.INTERNAL_SERVER_ERROR);
-                        }
-                    }
-                }
-            }
-            return null;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
 
@@ -578,31 +377,14 @@ public class chatController {
                 String refresh_token = result[0];
                 String request_url = result[1];
                 String request_id = result[2];
-                String access_token = refresh_token;
-                if (!refreshTokenList.containsKey(refresh_token) && !refresh_token.startsWith("eyJhb")) {
-                    String token = tokenService.getAccessToken(refresh_token);
-                    if (token == null) {
-                        return new ResponseEntity<>("refresh_token is wrong", HttpStatus.UNAUTHORIZED);
-                    }
-                    refreshTokenList.put(refresh_token, token);
-                    log.info("refreshTokenList初始化成功！");
-                    access_token = refreshTokenList.get(refresh_token);
-                }
-                else {
-                    if(!refresh_token.startsWith("eyJhb")){
-                        access_token = refreshTokenList.get(refresh_token);
-                    }
-                }
+                String access_token = getAccess_token(refresh_token);
                 String speechUrl = request_url;
                 // 检查URL是否包含要去除的部分
                 if (request_url.contains(chatPath)) {
-                    // 去除指定部分
                     speechUrl = request_url.replace(chatPath, "") + speechPath;
                 }
                 speechUrl = speechUrl + speechPath;
-                Map<String, String> headersMap = new HashMap<>();
-                //添加头部
-                addHeader(headersMap, access_token, request_id);
+                Map<String, String> headersMap = tokenService.addHeader(access_token, request_id);
                 String json = com.alibaba.fastjson2.JSON.toJSONString(conversation);
                 RequestBody requestBody = RequestBody.create(json, mediaType);
                 log.info("请求speech回复接口：" + speechUrl);
@@ -611,79 +393,24 @@ public class chatController {
                 Request streamRequest = requestBuilder.build();
                 try (Response resp = client.newCall(streamRequest).execute()) {
                     if (!resp.isSuccessful()) {
-                        if (resp.code() == 429) {
-                            return new ResponseEntity<>("rate limit exceeded", HttpStatus.TOO_MANY_REQUESTS);
-                        } else if (resp.code() == 401) {
-                            return new ResponseEntity<>("models is not exist", HttpStatus.BAD_REQUEST);
-                        } else if (resp.code() == 404) {
-                            return new ResponseEntity<>("404", HttpStatus.NOT_FOUND);
-                        } else if (resp.code() == 500) {
-                            return new ResponseEntity<>("INTERNAL SERVER ERROR", HttpStatus.INTERNAL_SERVER_ERROR);
-                        } else {
-                            String token = refresh_token;
-                            if (!refresh_token.startsWith("eyJhb")) {
-                                token = tokenService.getAccessToken(refresh_token);
-                                if (token == null) {
-                                    return new ResponseEntity<>("refresh_token is wrong", HttpStatus.UNAUTHORIZED);
-                                }
-                                refreshTokenList.put(refresh_token, token);
-                                log.info("assess_token过期，refreshTokenList重置化成功！");
-                            }
-                            againSpeechConversation(response, conversation, token, request_url, request_id);
-                        }
+                        processService.speechManageUnsuccessfulResponse(refreshTokenList, resp,
+                                refresh_token, response, conversation, speechUrl,
+                                request_id);
                     } else {
                         // speech 输出
                         outPutService.outPutSpeech(response, resp, conversation);
                     }
+                } catch (ResponseStatusException e) {
+                    return new ResponseEntity<>(e.getMessage(), e.getStatus());
+                } catch (Exception e) {
+                    return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
                 }
             } catch (IllegalArgumentException e) {
                 return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
             }
             return null;
         }, executor);
         return outPutService.getObjectResponseEntity(response, future);
-    }
-
-
-    /**
-     * /v1/audio/speech
-     * 如发现token过期
-     * 重新回复问题
-     *
-     * @param response
-     * @param conversation
-     * @param access_token
-     * @return
-     */
-    public Object againSpeechConversation(HttpServletResponse response,
-                                          @org.springframework.web.bind.annotation.RequestBody Speech conversation,
-                                          String access_token,
-                                          String speechUrl,
-                                          String request_id) {
-        try {
-            Map<String, String> headersMap = new HashMap<>();
-            //添加头部
-            addHeader(headersMap, access_token, request_id);
-            String json = com.alibaba.fastjson2.JSON.toJSONString(conversation);
-            RequestBody requestBody = RequestBody.create(json, mediaType);
-            log.info("请求speech回复接口：" + speechUrl);
-            Request.Builder requestBuilder = new Request.Builder().url(speechUrl).post(requestBody);
-            headersMap.forEach(requestBuilder::addHeader);
-            Request streamRequest = requestBuilder.build();
-            try (Response resp = client.newCall(streamRequest).execute()) {
-                if (!resp.isSuccessful()) {
-                    return new ResponseEntity<>("refresh_token is wrong Or your network is wrong", HttpStatus.UNAUTHORIZED);
-                } else {
-                    // speech 输出
-                    outPutService.outPutSpeech(response, resp, conversation);
-                }
-            }
-            return null;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
 
@@ -725,30 +452,13 @@ public class chatController {
                         String refresh_token = result[0];
                         String request_url = result[1];
                         String request_id = result[2];
-                        String access_token = refresh_token;
-                        if (!refreshTokenList.containsKey(refresh_token) && !refresh_token.startsWith("eyJhb")) {
-                            String token = tokenService.getAccessToken(refresh_token);
-                            if (token == null) {
-                                return new ResponseEntity<>("refresh_token is wrong",
-                                        HttpStatus.UNAUTHORIZED);
-                            }
-                            refreshTokenList.put(refresh_token, token);
-                            log.info("refreshTokenList初始化成功！");
-                            access_token = refreshTokenList.get(refresh_token);
-                        }
-                        else {
-                            if(!refresh_token.startsWith("eyJhb")){
-                                access_token = refreshTokenList.get(refresh_token);
-                            }
-                        }
+                        String access_token = getAccess_token(refresh_token);
                         String audioUrl = request_url;
                         if (request_url.contains(chatPath)) {
                             audioUrl = request_url.replace(chatPath, "");
                         }
                         audioUrl = audioUrl + audioPath;
-                        Map<String, String> headersMap = new HashMap<>();
-                        addHeader(headersMap, access_token, request_id);
-
+                        Map<String, String> headersMap = tokenService.addHeader(access_token, request_id);
                         RequestBody fileBody = RequestBody.create(file.getBytes(),
                                 MediaType.parse("application/octet-stream"));
                         log.info("请求speech回复接口：" + audioUrl);
@@ -764,7 +474,8 @@ public class chatController {
                         try (Response resp = client.newCall(requestBuilder.build()).execute()) {
                             log.info(resp.toString());
                             if (!resp.isSuccessful()) {
-                                manageUnsuccessfulResponse(resp, refresh_token, response, fileBody, filename, model,
+                                processService.audioManageUnsuccessfulResponse(refreshTokenList, resp,
+                                        refresh_token, response, fileBody, filename, model,
                                         audioUrl, request_id);
                             } else {
                                 outPutService.outPutAudio(response, resp, model);
@@ -778,83 +489,23 @@ public class chatController {
         return outPutService.getObjectResponseEntity(response, future);
     }
 
-    private void manageUnsuccessfulResponse(Response resp, String refresh_token,
-                                            HttpServletResponse response, RequestBody fileBody, String filename, String model,
-                                            String audioUrl, String request_id) {
-        switch (resp.code()) {
-            case 429:
-                throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "rate limit exceeded");
-            case 401:
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "models do not exist");
-            case 404:
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "404");
-            case 500:
-                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL SERVER ERROR");
-            default:
-                String token = refresh_token;
-                if (!refresh_token.startsWith("eyJhb")) {
-                    token = tokenService.getAccessToken(refresh_token);
-                    if (token == null) {
-                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "refresh_token is wrong");
-                    }
-                    refreshTokenList.put(refresh_token, token);
-                    log.info("assess_token过期，refreshTokenList重置化成功！");
-                }
-                againAudioConversation(response, fileBody, model, filename, token, audioUrl, request_id);
-        }
-    }
-
-    /**
-     * v1/audio/transcriptions
-     * 如发现token过期
-     * 重新回复问题
-     *
-     * @param response
-     * @param access_token
-     * @return
-     */
-    public Object againAudioConversation(HttpServletResponse response,
-                                         RequestBody fileBody,
-                                         String model,
-                                         String filename,
-                                         String access_token,
-                                         String audioUrl,
-                                         String request_id) {
-        try {
-            Map<String, String> headersMap = new HashMap<>();
-            //添加头部
-            addHeader(headersMap, access_token, request_id);
-
-            RequestBody body = new MultipartBody.Builder()
-                    .setType(MultipartBody.FORM)
-                    .addFormDataPart("model", model)
-                    .addFormDataPart("file", filename, fileBody)
-                    .build();
-            Request.Builder requestBuilder = new Request.Builder()
-                    .url(audioUrl)
-                    .post(body);
-
-            headersMap.forEach(requestBuilder::addHeader);
-            try (Response resp = client.newCall(requestBuilder.build()).execute()) {
-                if (!resp.isSuccessful()) {
-                    return new ResponseEntity<>("refresh_token is wrong Or your network is wrong", HttpStatus.UNAUTHORIZED);
-                } else {
-                    // Audio 输出
-                    outPutService.outPutAudio(response, resp, model);
-                }
+    private String getAccess_token(String refresh_token) {
+        String access_token = refresh_token;
+        boolean is_access = refresh_token.startsWith("eyJhb");
+        if (!refreshTokenList.containsKey(refresh_token) && !is_access) {
+            String token = tokenService.getAccessToken(refresh_token);
+            if (token == null) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "refresh_token is wrong!");
             }
-            return null;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            refreshTokenList.put(refresh_token, token);
+            log.info("refreshTokenList初始化成功！");
+            access_token = refreshTokenList.get(refresh_token);
+        } else {
+            if (!is_access) {
+                log.info("从缓存读取access_token成功！");
+                access_token = refreshTokenList.get(refresh_token);
+            }
         }
+        return access_token;
     }
-
-
-    private void addHeader(Map<String, String> headersMap, String access_token, String request_id) {
-        headersMap.put("Authorization", "Bearer " + access_token);
-        if (request_id != null) {
-            headersMap.put("ChatGPT-Account-ID", request_id);
-        }
-    }
-
 }

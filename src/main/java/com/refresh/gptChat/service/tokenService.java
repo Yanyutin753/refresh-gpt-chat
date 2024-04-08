@@ -1,6 +1,6 @@
 package com.refresh.gptChat.service;
 
-import java.io.IOException;
+import java.util.Map;
 
 /**
  * @author Yangyang
@@ -9,10 +9,11 @@ import java.io.IOException;
 public interface tokenService {
     /**
      * 用于refresh_token 拿到 access_token
-     *
-     * @param key (refresh_token)
-     * @return
-     * @throws IOException
      */
     String getAccessToken(String key);
+
+    /**
+     * 用于添加请求头
+     */
+    Map<String, String> addHeader(String accessToken, String requestId);
 }

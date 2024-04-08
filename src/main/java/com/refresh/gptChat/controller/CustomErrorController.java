@@ -13,8 +13,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class CustomErrorController implements ErrorController {
 
+    /**
+     * 错误路径
+     */
     private static final String PATH = "/error";
 
+    /**
+     * 重定向到错误页
+     *
+     * @return
+     */
     @RequestMapping(value = PATH)
     public ResponseEntity<String> error() {
         return new ResponseEntity<>("<!DOCTYPE html>\n" +

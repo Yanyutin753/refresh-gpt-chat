@@ -10,6 +10,9 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
+    /**
+     * 配置异步请求超时时间
+     */
     @Override
     public void configureAsyncSupport(AsyncSupportConfigurer configurer) {
         // 设置默认异步请求超时时间，例如设置为6分钟
