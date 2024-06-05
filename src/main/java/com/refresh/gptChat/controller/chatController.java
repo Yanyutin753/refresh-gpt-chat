@@ -378,7 +378,7 @@ public class chatController {
             return new ResponseEntity<>("File is too large, limit is: " + MAX_FILE_SIZE, HttpStatus.BAD_REQUEST);
         }
         String filename = file.getOriginalFilename();
-        log.info("上传文件名：" + filename + " 上传文件名：" + file.getSize());
+        log.info("上传文件名：" + filename + " 上传大小：" + file.getSize());
         log.info("上传模型：" + model);
         if (model == null || model.trim().isEmpty()) {
             return new ResponseEntity<>("Model cannot be empty", HttpStatus.BAD_REQUEST);
